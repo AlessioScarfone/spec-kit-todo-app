@@ -2,6 +2,9 @@
 
 A keyboard-driven terminal task manager built with [Ink](https://github.com/vadimdemedes/ink) and SQLite. Manage tasks and subtasks entirely from the command line — no mouse, no network connection required.
 
+> [!NOTE]  
+> This project was built as a hands-on test of [Spec-kit](https://github.com/github/spec-kit) — a Spec-Driven Development (SDD) framework.
+
 ## Features
 
 - Add top-level tasks and nested subtasks
