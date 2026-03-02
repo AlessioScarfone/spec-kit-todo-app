@@ -34,13 +34,13 @@
 - [X] T005 Remove `getActiveSubtaskCounts` from `src/db/queries.ts` (no remaining callers after T006)
 - [X] T006 Update `useTasks` hook in `src/hooks/useTasks.ts` — replace the `subtaskCounts` per-task loop and `activeSubtaskCounts` useMemo with a single `subtaskRatioCounts` useMemo; remove both from hook return value; expose `subtaskRatioCounts` — confirm T003 test now passes
 
-**Checkpoint**: `getSubtaskRatioCounts` and `useTasks` deliver `Record<number, { active: number; total: number }>` — ready for all user story phases
+**Checkpoint**: `getSubtaskRatioCounts` and `useTasks` deliver `Record<number, { completed: number; total: number }>` — ready for all user story phases
 
 ---
 
 ## Phase 3: User Story 1 — See Active vs. Total Subtask Progress (Priority: P1) 🎯 MVP
 
-**Goal**: The task list shows a dimmed `active/total` ratio badge (e.g. `1/2`) inline after each task title, for any task with at least one subtask. No badge appears when a task has zero subtasks.
+**Goal**: The task list shows a dimmed `completed/total` ratio badge (e.g. `1/2`) inline after each task title, for any task with at least one subtask. No badge appears when a task has zero subtasks.
 
 **Independent Test**: View the task list with tasks in mixed subtask states — confirm each badge shows the correct ratio; confirm no badge appears on a zero-subtask task.
 
@@ -51,7 +51,7 @@
 - [X] T009 [US1] Update `TaskListProps` and `TaskItem` call site in `src/components/TaskList.tsx` — replace `subtaskCounts: Record<number, number>` and `activeSubtaskCounts: Record<number, number>` with `subtaskRatioCounts: Record<number, { completed: number; total: number }>`; derive `hasSubtasks` from `ratio.total > 0`; pass `subtaskCompleted={ratio.completed}` and `subtaskTotal={ratio.total}`
 - [X] T010 [US1] Update `<TaskList>` props in `src/components/App.tsx` — pass `subtaskRatioCounts` instead of the removed `subtaskCounts` and `activeSubtaskCounts` — confirm T007 tests now pass
 
-**Checkpoint**: US1 complete — badge displays `active/total` correctly; all US1 tests green; `npm run build` compiles with no TypeScript errors
+**Checkpoint**: US1 complete — badge displays `completed/total` correctly; all US1 tests green; `npm run build` compiles with no TypeScript errors
 
 ---
 
@@ -59,7 +59,7 @@
 
 **Goal**: When the user marks a subtask as complete, the badge numerator decreases by 1 immediately. The denominator is unchanged. Re-activating a subtask increases the numerator by 1.
 
-**Independent Test**: Start with a task showing `2/3`; complete one subtask → badge shows `1/3`. Complete the last active subtask → badge shows `0/3`.
+**Independent Test**: Start with a task showing `1/3` (1 completed of 3 total); complete one active subtask → badge shows `2/3`. Complete the last active subtask → badge shows `3/3`.
 
 ⚠️ **Write tests FIRST — verify they FAIL before implementing**
 
@@ -74,7 +74,7 @@
 
 **Goal**: Adding a new subtask increases both numerator and denominator (new subtask is active); deleting an active subtask decreases both; deleting a completed subtask decreases only the denominator. Badge appears on first add; disappears only if all subtasks are deleted (total returns to 0).
 
-**Independent Test**: Task with no badge → add subtask → badge shows `1/1` → add second → `2/2` → delete the first (completed) subtask → `2/2` becomes `1/1`.
+**Independent Test**: Starting from a task showing `1/2` (1 completed, 2 total) → add a new active subtask → badge shows `1/3`. Delete the newly-added active subtask → badge returns to `1/2`.
 
 ⚠️ **Write tests FIRST — verify they FAIL before implementing**
 
@@ -163,7 +163,7 @@ Task T010: src/components/App.tsx       ← update <TaskList> call site
 2. Complete Phase 2 — query + hook (foundational)
 3. Complete Phase 3 — components (US1 badge display)
 4. **STOP and VALIDATE**: run `npm test && npm run build`; manually verify badge in terminal
-5. Commit `feat: add active/total ratio badge display (US1)`
+5. Commit `feat: add completed/total ratio badge display (US1)`
 
 ### Full Delivery (all stories)
 
@@ -189,6 +189,6 @@ After MVP is validated:
 **Parallel opportunities**: 5 identified  
 **MVP scope**: Phases 1–3 (tasks T001–T010, US1 only)  
 **Independent test criteria**:
-- US1: task list displays `active/total` badge correctly from static data
-- US2: completing a subtask immediately decrements the badge numerator
+- US1: task list displays `completed/total` badge correctly from static data
+- US2: completing a subtask immediately increments the badge numerator
 - US3: adding/deleting subtasks immediately updates both badge values

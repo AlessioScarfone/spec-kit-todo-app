@@ -84,7 +84,7 @@ interface TaskListProps {
 
 // AFTER (feature 005)
 interface TaskListProps {
-  subtaskRatioCounts: Record<number, { active: number; total: number }>;
+  subtaskRatioCounts: Record<number, { completed: number; total: number }>;
   // …  (subtaskCounts and activeSubtaskCounts removed)
 }
 ```
