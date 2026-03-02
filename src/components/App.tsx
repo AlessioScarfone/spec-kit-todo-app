@@ -5,6 +5,16 @@ import { useTasks } from '../hooks/useTasks.js';
 import { TaskList, buildFlatRows } from './TaskList.js';
 import { TaskInput } from './TaskInput.js';
 
+const BANNER_LINES = [
+  ' _____  ___  ____   ___    _____ _   _ ___ ',
+  '|_   _|/ _ \\|  _ \\ / _ \\  |_   _| | | |_ _|',
+  '  | | | | | | | | | | | |   | | | | | || | ',
+  '  | | | |_| | |_| | |_| |   | | | |_| || | ',
+  '  |_|  \\___/|____/ \\___/    |_|  \\___/|___|',
+];
+const BANNER_WIDTH = Math.max(...BANNER_LINES.map(l => l.length));
+const BANNER = BANNER_LINES.map(l => l.padEnd(BANNER_WIDTH)).join('\n');
+
 interface AppProps {
   db: Database;
   startupError?: string;
@@ -140,12 +150,10 @@ export function App({ db, startupError }: AppProps) {
         <StatusMessage variant="warning">{startupError}</StatusMessage>
       )}
 
-      <Box marginBottom={1}>
-        <Text bold color="cyan">
-          Todo TUI
-        </Text>
+      <Box flexDirection="column" marginBottom={1}>
+        <Text bold color="cyan">{BANNER}</Text>
         {showCompleted && (
-          <Text dimColor> [showing completed]</Text>
+          <Text dimColor>[showing completed]</Text>
         )}
       </Box>
 
