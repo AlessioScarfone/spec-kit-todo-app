@@ -191,3 +191,62 @@ describe('US3: useTasks subtask management', () => {
     expect(lastFrame()).toContain('expanded:0');
   });
 });
+
+// ────────────────────────────────────────────────────────────
+// 002: activeSubtaskCounts
+// ────────────────────────────────────────────────────────────
+describe('002: activeSubtaskCounts', () => {
+  it('(a) is {} when no tasks exist', () => {
+    const db = createTestDb();
+    const stateRef = { current: null as HookState | null };
+    render(<HookCapture db={db} stateRef={stateRef} />);
+    expect(stateRef.current!.activeSubtaskCounts).toEqual({});
+  });
+
+  it('(b) reflects active count after addSubtask', () => {
+    const db = createTestDb();
+    const stateRef = { current: null as HookState | null };
+    const { rerender } = render(<HookCapture db={db} stateRef={stateRef} />);
+    stateRef.current!.addTask('Parent');
+    rerender(<HookCapture db={db} stateRef={stateRef} />);
+    const taskId = stateRef.current!.tasks[0].id;
+    stateRef.current!.addSubtask(taskId, 'Sub 1');
+    rerender(<HookCapture db={db} stateRef={stateRef} />);
+    expect(stateRef.current!.activeSubtaskCounts[taskId]).toBe(1);
+  });
+
+  it('(c) decrements after completeSubtask', () => {
+    const db = createTestDb();
+    const stateRef = { current: null as HookState | null };
+    const { rerender } = render(<HookCapture db={db} stateRef={stateRef} />);
+    stateRef.current!.addTask('Parent');
+    rerender(<HookCapture db={db} stateRef={stateRef} />);
+    const taskId = stateRef.current!.tasks[0].id;
+    stateRef.current!.addSubtask(taskId, 'Sub A');
+    rerender(<HookCapture db={db} stateRef={stateRef} />);
+    stateRef.current!.addSubtask(taskId, 'Sub B');
+    rerender(<HookCapture db={db} stateRef={stateRef} />);
+    expect(stateRef.current!.activeSubtaskCounts[taskId]).toBe(2);
+    // Get a subtask id by querying db directly
+    const subs = (db as any).prepare('SELECT * FROM subtasks WHERE task_id = ? AND status = ?').all(taskId, 'active');
+    stateRef.current!.completeSubtask(subs[0].id);
+    rerender(<HookCapture db={db} stateRef={stateRef} />);
+    expect(stateRef.current!.activeSubtaskCounts[taskId]).toBe(1);
+  });
+
+  it('(d) is absent/0 after all subtasks of a task are completed', () => {
+    const db = createTestDb();
+    const stateRef = { current: null as HookState | null };
+    const { rerender } = render(<HookCapture db={db} stateRef={stateRef} />);
+    stateRef.current!.addTask('Parent');
+    rerender(<HookCapture db={db} stateRef={stateRef} />);
+    const taskId = stateRef.current!.tasks[0].id;
+    stateRef.current!.addSubtask(taskId, 'Only sub');
+    rerender(<HookCapture db={db} stateRef={stateRef} />);
+    const subs = (db as any).prepare('SELECT * FROM subtasks WHERE task_id = ? AND status = ?').all(taskId, 'active');
+    stateRef.current!.completeSubtask(subs[0].id);
+    rerender(<HookCapture db={db} stateRef={stateRef} />);
+    const count = stateRef.current!.activeSubtaskCounts[taskId] ?? 0;
+    expect(count).toBe(0);
+  });
+});

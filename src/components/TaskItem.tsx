@@ -6,9 +6,10 @@ interface TaskItemProps {
   isSelected: boolean;
   isExpanded: boolean;
   hasSubtasks: boolean;
+  activeSubtaskCount?: number;
 }
 
-export function TaskItem({ task, isSelected, isExpanded, hasSubtasks }: TaskItemProps) {
+export function TaskItem({ task, isSelected, isExpanded, hasSubtasks, activeSubtaskCount = 0 }: TaskItemProps) {
   const isComplete = task.status === 'complete';
 
   // Accordion indicator
@@ -26,6 +27,7 @@ export function TaskItem({ task, isSelected, isExpanded, hasSubtasks }: TaskItem
       <Text dimColor={isComplete}>
         {accordionIndicator}
         <Text strikethrough={isComplete}>{task.title}</Text>
+        {activeSubtaskCount > 0 && <Text dimColor> {activeSubtaskCount}</Text>}
         {isComplete && <Text dimColor> (done)</Text>}
       </Text>
     </Box>

@@ -26,11 +26,11 @@
 
 **⚠️ CRITICAL**: Do NOT proceed to Phase 2 until `npm test` confirms these suites appear and fail for the right reason (missing export or assertion failure — not a syntax/config error).
 
-- [ ] T001 [P] [US1] Write unit tests for `getActiveSubtaskCounts` in `tests/unit/db/queries.test.ts` — add `describe('002: getActiveSubtaskCounts')` covering: (a) returns `{}` when `taskIds` is empty, (b) returns `{}` when no subtasks exist, (c) counts only `active` subtasks per task, (d) ignores `complete` subtasks, (e) handles multiple tasks in one call, (f) correctly counts 12+ active subtasks for a single task — full integer displayed without truncation
-- [ ] T002 [P] [US1] Write hook tests for `activeSubtaskCounts` in `tests/unit/hooks/useTasks.test.tsx` — add `describe('002: activeSubtaskCounts')` covering: (a) is `{}` when no tasks exist, (b) reflects active count after `addSubtask`, (c) decrements after `completeSubtask`, (d) absent/0 after all subtasks of a task are completed
-- [ ] T003 [P] [US1] Write integration tests for badge rendering in `tests/integration/components/App.test.tsx` — add `describe('002: subtask count badge')` covering: (a) badge absent when task has no subtasks, (b) badge shows correct count with mixed active/complete subtasks, (c) badge disappears when last active subtask is completed, (d) badge decrements after pressing `d` on an active subtask, (e) badge appears at `1` when a subtask is added to a task with no badge (US3 add path), (f) badge decrements from `2` to `1` when one of two active subtasks is completed (US2 intermediate state), (g) after badge renders, task title string is still fully present in the frame (layout non-regression)
-- [ ] T013 [P] Write integration test for bulk-complete edge case in `tests/integration/components/App.test.tsx` — add to `describe('002: subtask count badge')`: pressing `c` on a parent task (bulk-completes all its subtasks) causes the badge to disappear for that task
-- [ ] T014 [P] Write integration test for show-completed toggle edge case in `tests/integration/components/App.test.tsx` — add to `describe('002: subtask count badge')`: toggling `h` to show completed tasks — a task with all subtasks completed shows no badge
+- [X] T001 [P] [US1] Write unit tests for `getActiveSubtaskCounts` in `tests/unit/db/queries.test.ts` — add `describe('002: getActiveSubtaskCounts')` covering: (a) returns `{}` when `taskIds` is empty, (b) returns `{}` when no subtasks exist, (c) counts only `active` subtasks per task, (d) ignores `complete` subtasks, (e) handles multiple tasks in one call, (f) correctly counts 12+ active subtasks for a single task — full integer displayed without truncation
+- [X] T002 [P] [US1] Write hook tests for `activeSubtaskCounts` in `tests/unit/hooks/useTasks.test.tsx` — add `describe('002: activeSubtaskCounts')` covering: (a) is `{}` when no tasks exist, (b) reflects active count after `addSubtask`, (c) decrements after `completeSubtask`, (d) absent/0 after all subtasks of a task are completed
+- [X] T003 [P] [US1] Write integration tests for badge rendering in `tests/integration/components/App.test.tsx` — add `describe('002: subtask count badge')` covering: (a) badge absent when task has no subtasks, (b) badge shows correct count with mixed active/complete subtasks, (c) badge disappears when last active subtask is completed, (d) badge decrements after pressing `d` on an active subtask, (e) badge appears at `1` when a subtask is added to a task with no badge (US3 add path), (f) badge decrements from `2` to `1` when one of two active subtasks is completed (US2 intermediate state), (g) after badge renders, task title string is still fully present in the frame (layout non-regression)
+- [X] T013 [P] Write integration test for bulk-complete edge case in `tests/integration/components/App.test.tsx` — add to `describe('002: subtask count badge')`: pressing `c` on a parent task (bulk-completes all its subtasks) causes the badge to disappear for that task
+- [X] T014 [P] Write integration test for show-completed toggle edge case in `tests/integration/components/App.test.tsx` — add to `describe('002: subtask count badge')`: toggling `h` to show completed tasks — a task with all subtasks completed shows no badge
 
 **Checkpoint**: `npm test` — all five suites/cases appear and fail. Proceed to Phase 2.
 
@@ -42,7 +42,7 @@
 
 **⚠️ CRITICAL**: All US phases are blocked until this phase is complete.
 
-- [ ] T004 Add `getActiveSubtaskCounts(db: Database, taskIds: number[]): Record<number, number>` to `src/db/queries.ts` — guard: return `{}` immediately when `taskIds.length === 0`; run `SELECT task_id, COUNT(*) as cnt FROM subtasks WHERE task_id IN (…) AND status = 'active' GROUP BY task_id`; default missing task IDs to 0
+- [X] T004 Add `getActiveSubtaskCounts(db: Database, taskIds: number[]): Record<number, number>` to `src/db/queries.ts` — guard: return `{}` immediately when `taskIds.length === 0`; run `SELECT task_id, COUNT(*) as cnt FROM subtasks WHERE task_id IN (…) AND status = 'active' GROUP BY task_id`; default missing task IDs to 0
 
 **Checkpoint**: `npx vitest run tests/unit/db/queries.test.ts` — the `002: getActiveSubtaskCounts` suite is green. Foundation ready.
 
@@ -56,10 +56,10 @@
 
 ### Implementation for User Story 1
 
-- [ ] T005 [US1] Add `activeSubtaskCounts` useMemo to `src/hooks/useTasks.ts` — call `getActiveSubtaskCounts(db, tasks.map(t => t.id))` with deps `[db, tasks, refreshToken]`; include `activeSubtaskCounts` in the hook return object
-- [ ] T006 [US1] Destructure `activeSubtaskCounts` from `useTasks(db)` in `src/components/App.tsx` and pass it as prop `activeSubtaskCounts` to `<TaskList>`
-- [ ] T007 [US1] Add `activeSubtaskCounts: Record<number, number>` to `TaskListProps` in `src/components/TaskList.tsx`; pass `activeSubtaskCount={activeSubtaskCounts[row.task.id] ?? 0}` to each `<TaskItem>`
-- [ ] T008 [US1] Add `activeSubtaskCount?: number` to `TaskItemProps` in `src/components/TaskItem.tsx`; render `<Text dimColor> {activeSubtaskCount}</Text>` after the title `<Text>` and before `(done)`, conditional on `activeSubtaskCount > 0` — use `dimColor` not `color="gray"`
+- [X] T005 [US1] Add `activeSubtaskCounts` useMemo to `src/hooks/useTasks.ts` — call `getActiveSubtaskCounts(db, tasks.map(t => t.id))` with deps `[db, tasks, refreshToken]`; include `activeSubtaskCounts` in the hook return object
+- [X] T006 [US1] Destructure `activeSubtaskCounts` from `useTasks(db)` in `src/components/App.tsx` and pass it as prop `activeSubtaskCounts` to `<TaskList>`
+- [X] T007 [US1] Add `activeSubtaskCounts: Record<number, number>` to `TaskListProps` in `src/components/TaskList.tsx`; pass `activeSubtaskCount={activeSubtaskCounts[row.task.id] ?? 0}` to each `<TaskItem>`
+- [X] T008 [US1] Add `activeSubtaskCount?: number` to `TaskItemProps` in `src/components/TaskItem.tsx`; render `<Text dimColor> {activeSubtaskCount}</Text>` after the title `<Text>` and before `(done)`, conditional on `activeSubtaskCount > 0` — use `dimColor` not `color="gray"`
 
 **Checkpoint**: `npm test` — all three `002:` suites green. US1 fully functional and testable independently.
 
@@ -71,8 +71,8 @@
 
 > **No new implementation code required.** `completeSubtask` already calls `reload()` → `refreshToken` increments → `activeSubtaskCounts` useMemo recomputes. Test T003(c) already covers this.
 
-- [ ] T009 [US2] Confirm `tests/integration/components/App.test.tsx` test T003(c) ("badge disappears when last subtask completed") passes — no code changes needed
-- [ ] T010 [US2] Manually verify in running app (`npm start`): add 2 subtasks to a task, press `c` on one → count drops to `1`; press `c` on the remaining → badge disappears
+- [X] T009 [US2] Confirm `tests/integration/components/App.test.tsx` test T003(c) ("badge disappears when last subtask completed") passes — no code changes needed
+- [X] T010 [US2] Manually verify in running app (`npm start`): add 2 subtasks to a task, press `c` on one → count drops to `1`; press `c` on the remaining → badge disappears
 
 **Checkpoint**: US2 automated test green + manual smoke passed.
 
@@ -84,8 +84,8 @@
 
 > **No new implementation code required.** `insertSubtask` and `deleteSubtask` both call `reload()`. Test T003(d) already covers the delete path.
 
-- [ ] T011 [US3] Confirm `tests/integration/components/App.test.tsx` test T003(d) ("badge decrements after delete") passes — no code changes needed
-- [ ] T012 [US3] Manually verify in running app (`npm start`): add a subtask to a task with no badge → badge appears at `1`; press `d` on that subtask → badge disappears
+- [X] T011 [US3] Confirm `tests/integration/components/App.test.tsx` test T003(d) ("badge decrements after delete") passes — no code changes needed
+- [X] T012 [US3] Manually verify in running app (`npm start`): add a subtask to a task with no badge → badge appears at `1`; press `d` on that subtask → badge disappears
 
 **Checkpoint**: US3 automated test green + manual smoke passed.
 
@@ -93,9 +93,9 @@
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T013 [P] Confirm test T013 (bulk-complete → badge disappears) written in Phase 1 passes — no code changes needed
-- [ ] T014 [P] Confirm test T014 (show-completed toggle → no badge) written in Phase 1 passes — no code changes needed
-- [ ] T015 [P] Run `npx tsc --noEmit` and confirm zero type errors across all changed files
+- [X] T013 [P] Confirm test T013 (bulk-complete → badge disappears) written in Phase 1 passes — no code changes needed
+- [X] T014 [P] Confirm test T014 (show-completed toggle → no badge) written in Phase 1 passes — no code changes needed
+- [X] T015 [P] Run `npx tsc --noEmit` and confirm zero type errors across all changed files
 
 **Checkpoint**: All tests pass, TypeScript clean. Feature complete.
 
