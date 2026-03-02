@@ -27,7 +27,7 @@ export function TaskItem({ task, isSelected, isExpanded, hasSubtasks, activeSubt
       <Text dimColor={isComplete}>
         {accordionIndicator}
         <Text strikethrough={isComplete}>{task.title}</Text>
-        {activeSubtaskCount > 0 && <Text dimColor> {activeSubtaskCount}</Text>}
+        {activeSubtaskCount > 0 && <Text dimColor> [{activeSubtaskCount}]</Text>}
         {isComplete && <Text dimColor> (done)</Text>}
       </Text>
     </Box>
