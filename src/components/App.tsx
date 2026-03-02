@@ -1,4 +1,3 @@
-import React from 'react';
 import { Box, Text, useApp, useInput } from 'ink';
 import { StatusMessage } from '@inkjs/ui';
 import type { Database } from 'better-sqlite3';
