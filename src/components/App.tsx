@@ -81,6 +81,14 @@ export function App({ db, startupError }: AppProps) {
         return;
       }
 
+      // Toggle expand/collapse subtasks with Tab
+      if (key.tab) {
+        if (currentRow?.kind === 'task' && (subtaskCounts[currentRow.task.id] ?? 0) > 0) {
+          toggleExpand(currentRow.task.id);
+        }
+        return;
+      }
+
       // Add task
       if (input === 'a') {
         setInputMode('addTask');
