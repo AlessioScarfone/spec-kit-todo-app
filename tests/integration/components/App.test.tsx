@@ -372,7 +372,8 @@ describe('002: subtask count badge', () => {
     await sleep(50);
     frame = lastFrame() ?? '';
     titleLine = frame.split('\n').find((l: string) => l.includes('Solo task')) ?? '';
-    expect(titleLine).not.toMatch(/Solo task.*\d/);
+    // badge stays visible as 0/1 — numerator goes to zero but badge is not hidden
+    expect(titleLine).toMatch(/Solo task.*0\/1/);
   });
 
   it('(d) badge decrements after pressing d on an active subtask', async () => {
@@ -556,7 +557,8 @@ describe('002: subtask count badge', () => {
     expect(frame).toContain('All done task');
     // The task should be visible (completed) but no badge
     const titleLine = frame.split('\n').find((l: string) => l.includes('All done task')) ?? '';
-    expect(titleLine).not.toMatch(/All done task.*\d/);
+    // badge stays visible as 0/1 — numerator goes to zero but badge is not hidden
+    expect(titleLine).toMatch(/All done task.*0\/1/);
   });
 });
 
@@ -888,3 +890,311 @@ describe('004 T008: Fullscreen layout', () => {
     expect(lastFrame()).toContain('Scroll task 15');
   });
 });
+
+// ────────────────────────────────────────────────────────────
+// 005: active/total ratio badge — US1: display
+// ────────────────────────────────────────────────────────────
+describe('005 US1: ratio badge display', () => {
+  it('(1) badge shows 1/2 for a task with 1 active and 1 completed subtask', async () => {
+    const db = createTestDb();
+    const { lastFrame, stdin } = render(<App db={db} />);
+    stdin.write('a');
+    await sleep(50);
+    stdin.write('Ratio task');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    // Add 2 subtasks
+    stdin.write('s');
+    await sleep(50);
+    stdin.write('Active sub');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    stdin.write('s');
+    await sleep(50);
+    stdin.write('Done sub');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    // Expand and complete the second subtask
+    stdin.write(RIGHT);
+    await sleep(50);
+    stdin.write(DOWN);
+    await sleep(50);
+    stdin.write(DOWN); // move to 2nd subtask
+    await sleep(50);
+    stdin.write('c'); // complete Done sub
+    await sleep(50);
+    const frame = lastFrame() ?? '';
+    const titleLine = frame.split('\n').find((l: string) => l.includes('Ratio task')) ?? '';
+    expect(titleLine).toMatch(/Ratio task.*1\/2/);
+  });
+
+  it('(2) badge shows 3/3 for a task with 3 active and 0 completed subtasks', async () => {
+    const db = createTestDb();
+    const { lastFrame, stdin } = render(<App db={db} />);
+    stdin.write('a');
+    await sleep(50);
+    stdin.write('All active task');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    for (const name of ['Sub A', 'Sub B', 'Sub C']) {
+      stdin.write('s');
+      await sleep(50);
+      stdin.write(name);
+      await sleep(50);
+      stdin.write(ENTER);
+      await sleep(50);
+    }
+    const frame = lastFrame() ?? '';
+    const titleLine = frame.split('\n').find((l: string) => l.includes('All active task')) ?? '';
+    expect(titleLine).toMatch(/All active task.*3\/3/);
+  });
+
+  it('(3) no badge when task has zero subtasks', async () => {
+    const db = createTestDb();
+    const { lastFrame, stdin } = render(<App db={db} />);
+    stdin.write('a');
+    await sleep(50);
+    stdin.write('No sub task');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    const frame = lastFrame() ?? '';
+    const titleLine = frame.split('\n').find((l: string) => l.includes('No sub task')) ?? '';
+    // Must not contain any slash-separated ratio
+    expect(titleLine).not.toMatch(/\d+\/\d+/);
+  });
+});
+
+// ────────────────────────────────────────────────────────────
+// 005 US2: ratio badge updates on subtask completion
+// ────────────────────────────────────────────────────────────
+describe('005 US2: ratio badge updates on completion', () => {
+  it('(1) completing a subtask decrements numerator: 2/3 → 1/3', async () => {
+    const db = createTestDb();
+    const { lastFrame, stdin } = render(<App db={db} />);
+    stdin.write('a');
+    await sleep(50);
+    stdin.write('Completion task');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    for (const name of ['Sub 1', 'Sub 2', 'Sub 3']) {
+      stdin.write('s');
+      await sleep(50);
+      stdin.write(name);
+      await sleep(50);
+      stdin.write(ENTER);
+      await sleep(50);
+    }
+    // Badge should be 3/3
+    let frame = lastFrame() ?? '';
+    let titleLine = frame.split('\n').find((l: string) => l.includes('Completion task')) ?? '';
+    expect(titleLine).toMatch(/Completion task.*3\/3/);
+    // Expand and complete one subtask
+    stdin.write(RIGHT);
+    await sleep(50);
+    stdin.write(DOWN);
+    await sleep(50);
+    stdin.write('c');
+    await sleep(50);
+    frame = lastFrame() ?? '';
+    titleLine = frame.split('\n').find((l: string) => l.includes('Completion task')) ?? '';
+    expect(titleLine).toMatch(/Completion task.*2\/3/);
+  });
+
+  it('(2) completing last active subtask shows 0/N badge, not hidden', async () => {
+    const db = createTestDb();
+    const { lastFrame, stdin } = render(<App db={db} />);
+    stdin.write('a');
+    await sleep(50);
+    stdin.write('Last sub task');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    stdin.write('s');
+    await sleep(50);
+    stdin.write('Only sub');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    // Badge shows 1/1
+    let frame = lastFrame() ?? '';
+    let titleLine = frame.split('\n').find((l: string) => l.includes('Last sub task')) ?? '';
+    expect(titleLine).toMatch(/Last sub task.*1\/1/);
+    // Complete the only subtask
+    stdin.write(RIGHT);
+    await sleep(50);
+    stdin.write(DOWN);
+    await sleep(50);
+    stdin.write('c');
+    await sleep(50);
+    frame = lastFrame() ?? '';
+    titleLine = frame.split('\n').find((l: string) => l.includes('Last sub task')) ?? '';
+    // Badge shows 0/1 (NOT hidden)
+    expect(titleLine).toMatch(/Last sub task.*0\/1/);
+  });
+
+  it('(3) re-activating a subtask increments numerator: 0/1 → 1/1', async () => {
+    const db = createTestDb();
+    const { lastFrame, stdin } = render(<App db={db} />);
+    stdin.write('a');
+    await sleep(50);
+    stdin.write('Reactivate task');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    stdin.write('s');
+    await sleep(50);
+    stdin.write('Reactivate me');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    // Expand, complete subtask
+    stdin.write(RIGHT);
+    await sleep(50);
+    stdin.write(DOWN);
+    await sleep(50);
+    stdin.write('c'); // complete subtask
+    await sleep(50);
+    // Now show completed to see the subtask
+    stdin.write(LEFT); // collapse
+    await sleep(50);
+    stdin.write('h'); // toggle show-completed
+    await sleep(50);
+    stdin.write(RIGHT); // expand again to see completed sub
+    await sleep(50);
+    stdin.write(DOWN); // navigate to completed subtask
+    await sleep(50);
+    stdin.write('c'); // reactivate subtask
+    await sleep(50);
+    const frame = lastFrame() ?? '';
+    const titleLine = frame.split('\n').find((l: string) => l.includes('Reactivate task')) ?? '';
+    expect(titleLine).toMatch(/Reactivate task.*1\/1/);
+  });
+});
+
+// ────────────────────────────────────────────────────────────
+// 005 US3: ratio badge updates on add/delete
+// ────────────────────────────────────────────────────────────
+describe('005 US3: ratio badge updates on add/delete', () => {
+  it('(1) no badge → add subtask → badge shows 1/1', async () => {
+    const db = createTestDb();
+    const { lastFrame, stdin } = render(<App db={db} />);
+    stdin.write('a');
+    await sleep(50);
+    stdin.write('Add badge task');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    let frame = lastFrame() ?? '';
+    let titleLine = frame.split('\n').find((l: string) => l.includes('Add badge task')) ?? '';
+    expect(titleLine).not.toMatch(/\d+\/\d+/);
+    stdin.write('s');
+    await sleep(50);
+    stdin.write('First sub');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    frame = lastFrame() ?? '';
+    titleLine = frame.split('\n').find((l: string) => l.includes('Add badge task')) ?? '';
+    expect(titleLine).toMatch(/Add badge task.*1\/1/);
+  });
+
+  it('(2) 1/2 + add active subtask → 2/3', async () => {
+    const db = createTestDb();
+    const { lastFrame, stdin } = render(<App db={db} />);
+    stdin.write('a');
+    await sleep(50);
+    stdin.write('Grow task');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    stdin.write('s');
+    await sleep(50);
+    stdin.write('Sub A');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    stdin.write('s');
+    await sleep(50);
+    stdin.write('Sub B');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    // Complete Sub B to get 1/2
+    stdin.write(RIGHT);
+    await sleep(50);
+    stdin.write(DOWN);
+    await sleep(50);
+    stdin.write(DOWN);
+    await sleep(50);
+    stdin.write('c'); // complete Sub B
+    await sleep(50);
+    let frame = lastFrame() ?? '';
+    let titleLine = frame.split('\n').find((l: string) => l.includes('Grow task')) ?? '';
+    expect(titleLine).toMatch(/Grow task.*1\/2/);
+    // Navigate UP to the parent task row (Sub B was hidden after completion,
+    // selection clamped to Sub A at index 1 — UP reaches Grow task at index 0)
+    stdin.write(UP);
+    await sleep(50);
+    // Collapse and add another subtask
+    stdin.write(LEFT);
+    await sleep(50);
+    stdin.write('s');
+    await sleep(50);
+    stdin.write('Sub C');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    frame = lastFrame() ?? '';
+    titleLine = frame.split('\n').find((l: string) => l.includes('Grow task')) ?? '';
+    expect(titleLine).toMatch(/Grow task.*2\/3/);
+  });
+
+  it('(3) 1/2 + delete active subtask → 0/1', async () => {
+    const db = createTestDb();
+    const { lastFrame, stdin } = render(<App db={db} />);
+    stdin.write('a');
+    await sleep(50);
+    stdin.write('Delete active task');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    stdin.write('s');
+    await sleep(50);
+    stdin.write('Active sub');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    stdin.write('s');
+    await sleep(50);
+    stdin.write('Done sub');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    // Complete 'Done sub' (2nd) to get 1/2
+    stdin.write(RIGHT);
+    await sleep(50);
+    stdin.write(DOWN);
+    await sleep(50);
+    stdin.write(DOWN);
+    await sleep(50);
+    stdin.write('c');
+    await sleep(50);
+    let frame = lastFrame() ?? '';
+    let titleLine = frame.split('\n').find((l: string) => l.includes('Delete active task')) ?? '';
+    expect(titleLine).toMatch(/Delete active task.*1\/2/);
+    // Delete the active subtask — 'Active sub' is already selected (Done sub was
+    // completed and hidden, selection clamped from index 2 to index 1 = Active sub)
+    stdin.write('d'); // delete Active sub
+    await sleep(50);
+    frame = lastFrame() ?? '';
+    titleLine = frame.split('\n').find((l: string) => l.includes('Delete active task')) ?? '';
+    expect(titleLine).toMatch(/Delete active task.*0\/1/);
+  });
+});
+
