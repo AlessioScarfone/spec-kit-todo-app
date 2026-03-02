@@ -1,0 +1,201 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import Database from 'better-sqlite3';
+import { runMigrations } from '../../../src/db/migrations.js';
+import {
+    getAllTasks,
+    insertTask,
+    completeTask,
+    completeSubtask,
+    deleteTask,
+    insertSubtask,
+    deleteSubtask,
+    getSubtasksForTask,
+} from '../../../src/db/queries.js';
+
+function createTestDb() {
+  const db = new Database(':memory:');
+  db.pragma('journal_mode = WAL');
+  db.pragma('foreign_keys = ON');
+  runMigrations(db);
+  return db;
+}
+
+// ────────────────────────────────────────────────────────────
+// US1: getAllTasks + insertTask
+// ────────────────────────────────────────────────────────────
+describe('US1: getAllTasks / insertTask', () => {
+  let db: ReturnType<typeof Database>;
+
+  beforeEach(() => {
+    db = createTestDb();
+  });
+
+  it('returns empty array when no tasks exist', () => {
+    expect(getAllTasks(db)).toEqual([]);
+  });
+
+  it('inserts a task and retrieves it', () => {
+    const task = insertTask(db, 'Buy groceries');
+    const all = getAllTasks(db);
+    expect(all).toHaveLength(1);
+    expect(all[0].title).toBe('Buy groceries');
+    expect(all[0].status).toBe('active');
+    expect(all[0].id).toBe(task.id);
+  });
+
+  it('preserves insertion order via position', () => {
+    insertTask(db, 'First');
+    insertTask(db, 'Second');
+    insertTask(db, 'Third');
+    const all = getAllTasks(db);
+    expect(all.map((t) => t.title)).toEqual(['First', 'Second', 'Third']);
+  });
+
+  it('only returns active tasks by default', () => {
+    const t = insertTask(db, 'Complete me');
+    completeTask(db, t.id);
+    expect(getAllTasks(db)).toHaveLength(0);
+  });
+
+  it('returns completed tasks when showCompleted is true', () => {
+    const t = insertTask(db, 'Done');
+    completeTask(db, t.id);
+    expect(getAllTasks(db, true)).toHaveLength(1);
+    expect(getAllTasks(db, true)[0].status).toBe('complete');
+  });
+
+  it('blocks empty title at DB level', () => {
+    expect(() => insertTask(db, '')).toThrow();
+  });
+});
+
+// ────────────────────────────────────────────────────────────
+// US2: completeTask / completeSubtask / deleteTask
+// ────────────────────────────────────────────────────────────
+describe('US2: completeTask / completeSubtask / deleteTask', () => {
+  let db: ReturnType<typeof Database>;
+
+  beforeEach(() => {
+    db = createTestDb();
+  });
+
+  it('completing a task also completes all its subtasks', () => {
+    const task = insertTask(db, 'Parent');
+    insertSubtask(db, task.id, 'Child 1');
+    insertSubtask(db, task.id, 'Child 2');
+    completeTask(db, task.id);
+    const subtasks = getSubtasksForTask(db, task.id, true);
+    expect(subtasks.every((s) => s.status === 'complete')).toBe(true);
+  });
+
+  it('completing a subtask only affects that subtask', () => {
+    const task = insertTask(db, 'Parent');
+    const s1 = insertSubtask(db, task.id, 'Child 1');
+    insertSubtask(db, task.id, 'Child 2');
+    completeSubtask(db, s1.id);
+    const all = getSubtasksForTask(db, task.id, true);
+    expect(all.find((s) => s.id === s1.id)?.status).toBe('complete');
+    expect(all.filter((s) => s.status === 'active')).toHaveLength(1);
+  });
+
+  it('deleting a task removes all its subtasks (cascade)', () => {
+    const task = insertTask(db, 'To delete');
+    insertSubtask(db, task.id, 'Child');
+    deleteTask(db, task.id);
+    expect(getAllTasks(db, true)).toHaveLength(0);
+    // subtasks should also be gone — try to query with the task_id directly
+    const stmt = db.prepare('SELECT * FROM subtasks WHERE task_id = ?');
+    expect(stmt.all(task.id)).toHaveLength(0);
+  });
+
+  it('getAllTasks with showCompleted returns both active and complete', () => {
+    insertTask(db, 'Active');
+    const t2 = insertTask(db, 'Done');
+    completeTask(db, t2.id);
+    const all = getAllTasks(db, true);
+    expect(all).toHaveLength(2);
+  });
+});
+
+// ────────────────────────────────────────────────────────────
+// US3: insertSubtask / deleteSubtask / getSubtasksForTask
+// ────────────────────────────────────────────────────────────
+describe('US3: insertSubtask / deleteSubtask / getSubtasksForTask', () => {
+  let db: ReturnType<typeof Database>;
+
+  beforeEach(() => {
+    db = createTestDb();
+  });
+
+  it('inserts subtasks under a parent task', () => {
+    const task = insertTask(db, 'Parent');
+    insertSubtask(db, task.id, 'Sub A');
+    insertSubtask(db, task.id, 'Sub B');
+    const subs = getSubtasksForTask(db, task.id);
+    expect(subs).toHaveLength(2);
+    expect(subs[0].title).toBe('Sub A');
+  });
+
+  it('subtask position is scoped per parent task', () => {
+    const t1 = insertTask(db, 'Task 1');
+    const t2 = insertTask(db, 'Task 2');
+    insertSubtask(db, t1.id, 'T1-Sub1');
+    insertSubtask(db, t2.id, 'T2-Sub1');
+    insertSubtask(db, t1.id, 'T1-Sub2');
+    const t1Subs = getSubtasksForTask(db, t1.id);
+    expect(t1Subs.map((s) => s.title)).toEqual(['T1-Sub1', 'T1-Sub2']);
+  });
+
+  it('deletes a subtask without affecting parent or siblings', () => {
+    const task = insertTask(db, 'Parent');
+    const s1 = insertSubtask(db, task.id, 'Keep');
+    const s2 = insertSubtask(db, task.id, 'Delete me');
+    deleteSubtask(db, s2.id);
+    const subs = getSubtasksForTask(db, task.id);
+    expect(subs).toHaveLength(1);
+    expect(subs[0].id).toBe(s1.id);
+  });
+
+  it('cascade delete removes subtasks when parent task is deleted', () => {
+    const task = insertTask(db, 'Parent');
+    insertSubtask(db, task.id, 'Child');
+    deleteTask(db, task.id);
+    const stmt = db.prepare('SELECT * FROM subtasks WHERE task_id = ?');
+    expect(stmt.all(task.id)).toHaveLength(0);
+  });
+
+  it('getSubtasksForTask returns only active by default', () => {
+    const task = insertTask(db, 'Parent');
+    const s1 = insertSubtask(db, task.id, 'Active sub');
+    const s2 = insertSubtask(db, task.id, 'Completed sub');
+    completeSubtask(db, s2.id);
+    const active = getSubtasksForTask(db, task.id);
+    expect(active).toHaveLength(1);
+    expect(active[0].id).toBe(s1.id);
+  });
+});
+
+// ────────────────────────────────────────────────────────────
+// Performance: SC-002 — 500 rows, getAllTasks < 200ms
+// ────────────────────────────────────────────────────────────
+describe('Performance (SC-002)', () => {
+  it('getAllTasks completes within 200ms for 500 tasks', () => {
+    const db = createTestDb();
+    const insert = db.prepare(
+      `INSERT INTO tasks (title, status, position, created_at) VALUES (?, 'active', ?, ?)`
+    );
+    const insertMany = db.transaction((n: number) => {
+      for (let i = 0; i < n; i++) {
+        insert.run(`Task ${i}`, i + 1, Date.now());
+      }
+    });
+    insertMany(500);
+
+    const start = performance.now();
+    const results = getAllTasks(db);
+    const elapsed = performance.now() - start;
+
+    expect(results).toHaveLength(500);
+    expect(elapsed).toBeLessThan(200);
+  });
+});
