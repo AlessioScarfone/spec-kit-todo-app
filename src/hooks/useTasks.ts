@@ -29,22 +29,10 @@ export function useTasks(db: Database) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, showCompleted, expandedTaskIds, refreshToken]);
 
-  // Subtask counts for ALL tasks (used to show accordion indicator + enable expand)
-  const subtaskCounts = useMemo(() => {
-    const counts: Record<number, number> = {};
-    for (const task of tasks) {
-      const row = db
-        .prepare('SELECT COUNT(*) as cnt FROM subtasks WHERE task_id = ?')
-        .get(task.id) as { cnt: number };
-      counts[task.id] = row.cnt;
-    }
-    return counts;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [db, tasks, refreshToken]);
-
-  // Active-only subtask counts for badge display
-  const activeSubtaskCounts = useMemo(
-    () => queries.getActiveSubtaskCounts(db, tasks.map((t) => t.id)),
+  // Combined active + total subtask counts per task — single SQL round-trip
+  // Replaces old per-task subtaskCounts loop + getActiveSubtaskCounts
+  const subtaskRatioCounts = useMemo(
+    () => queries.getSubtaskRatioCounts(db, tasks.map((t) => t.id)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [db, tasks, refreshToken]
   );
@@ -135,8 +123,7 @@ export function useTasks(db: Database) {
   return {
     tasks,
     subtasksMap,
-    subtaskCounts,
-    activeSubtaskCounts,
+    subtaskRatioCounts,
     inputMode,
     setInputMode,
     selectedIndex,
