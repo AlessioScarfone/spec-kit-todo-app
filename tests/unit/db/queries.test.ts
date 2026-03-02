@@ -2,15 +2,17 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import Database from 'better-sqlite3';
 import { runMigrations } from '../../../src/db/migrations.js';
 import {
-    getAllTasks,
-    insertTask,
-    completeTask,
-    completeSubtask,
-    deleteTask,
-    insertSubtask,
-    deleteSubtask,
-    getSubtasksForTask,
-    getActiveSubtaskCounts,
+  getAllTasks,
+  insertTask,
+  completeTask,
+  completeSubtask,
+  deleteTask,
+  insertSubtask,
+  deleteSubtask,
+  getSubtasksForTask,
+  getActiveSubtaskCounts,
+  reactivateTask,
+  reactivateSubtask,
 } from '../../../src/db/queries.js';
 
 function createTestDb() {
@@ -258,5 +260,72 @@ describe('002: getActiveSubtaskCounts', () => {
     }
     const result = getActiveSubtaskCounts(db, [task.id]);
     expect(result[task.id]).toBe(13);
+  });
+});
+
+// ────────────────────────────────────────────────────────────
+// 004: reactivateTask / reactivateSubtask (T001)
+// ────────────────────────────────────────────────────────────
+describe('004: reactivateTask / reactivateSubtask', () => {
+  let db: ReturnType<typeof Database>;
+
+  beforeEach(() => {
+    db = createTestDb();
+  });
+
+  it('(1) reactivateTask sets status = active for a completed task row', () => {
+    const task = insertTask(db, 'Completed task');
+    completeTask(db, task.id);
+    expect(getAllTasks(db, true)[0].status).toBe('complete');
+    reactivateTask(db, task.id);
+    expect(getAllTasks(db, true)[0].status).toBe('active');
+  });
+
+  it('(2) reactivateSubtask sets status = active for a completed subtask row', () => {
+    const task = insertTask(db, 'Parent');
+    const sub = insertSubtask(db, task.id, 'Completed subtask');
+    completeSubtask(db, sub.id);
+    expect(getSubtasksForTask(db, task.id, true)[0].status).toBe('complete');
+    reactivateSubtask(db, sub.id);
+    expect(getSubtasksForTask(db, task.id, true)[0].status).toBe('active');
+  });
+
+  it('(3) reactivateTask on an already-active row is a no-op', () => {
+    const task = insertTask(db, 'Active task');
+    reactivateTask(db, task.id);
+    expect(getAllTasks(db)[0].status).toBe('active');
+  });
+
+  it('(3b) reactivateSubtask on an already-active row is a no-op', () => {
+    const task = insertTask(db, 'Parent');
+    const sub = insertSubtask(db, task.id, 'Active subtask');
+    reactivateSubtask(db, sub.id);
+    expect(getSubtasksForTask(db, task.id)[0].status).toBe('active');
+  });
+
+  it('(4) after reactivateTask the row reads back as active on a fresh SELECT', () => {
+    const task = insertTask(db, 'Persistence task');
+    completeTask(db, task.id);
+    reactivateTask(db, task.id);
+    // Fresh SELECT via getAllTasks with showCompleted
+    const row = (db.prepare('SELECT * FROM tasks WHERE id = ?').get(task.id) as { status: string });
+    expect(row.status).toBe('active');
+  });
+
+  it('(5) reactivateSubtask leaves parent task still complete (independent toggle)', () => {
+    const task = insertTask(db, 'Parent task');
+    const sub = insertSubtask(db, task.id, 'Child subtask');
+    // Complete parent (cascades to subtasks)
+    completeTask(db, task.id);
+    const parentBefore = db.prepare('SELECT * FROM tasks WHERE id = ?').get(task.id) as { status: string };
+    expect(parentBefore.status).toBe('complete');
+    // Reactivate only the subtask
+    reactivateSubtask(db, sub.id);
+    // Parent task must still be complete
+    const parentAfter = db.prepare('SELECT * FROM tasks WHERE id = ?').get(task.id) as { status: string };
+    expect(parentAfter.status).toBe('complete');
+    // Subtask is now active
+    const subRow = db.prepare('SELECT * FROM subtasks WHERE id = ?').get(sub.id) as { status: string };
+    expect(subRow.status).toBe('active');
   });
 });
