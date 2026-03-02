@@ -1,6 +1,7 @@
-import { Box, Text, useApp, useInput } from 'ink';
+import { Box, Text, useApp, useInput, useStdout } from 'ink';
 import { StatusMessage } from '@inkjs/ui';
 import type { Database } from 'better-sqlite3';
+import { useState } from 'react';
 import { useTasks } from '../hooks/useTasks.js';
 import { TaskList, buildFlatRows } from './TaskList.js';
 import { TaskInput } from './TaskInput.js';
@@ -15,6 +16,9 @@ const BANNER_LINES = [
 const BANNER_WIDTH = Math.max(...BANNER_LINES.map(l => l.length));
 const BANNER = BANNER_LINES.map(l => l.padEnd(BANNER_WIDTH)).join('\n');
 
+// Rows reserved by fixed UI elements (banner + margin + command bar)
+const RESERVED_ROWS = BANNER_LINES.length + 1 + 1; // 5 banner + 1 margin + 1 command bar = 7
+
 interface AppProps {
   db: Database;
   startupError?: string;
@@ -22,6 +26,8 @@ interface AppProps {
 
 export function App({ db, startupError }: AppProps) {
   const { exit } = useApp();
+  const { stdout } = useStdout();
+  const [scrollOffset, setScrollOffset] = useState(0);
 
   const {
     tasks,
@@ -37,6 +43,8 @@ export function App({ db, startupError }: AppProps) {
     addTask,
     completeTask,
     completeSubtask,
+    reactivateTask,
+    reactivateSubtask,
     deleteTask,
     toggleShowCompleted,
     addSubtask,
@@ -48,17 +56,36 @@ export function App({ db, startupError }: AppProps) {
   const rows = buildFlatRows(tasks, subtasksMap, expandedTaskIds);
   const rowCount = rows.length;
 
+  // Compute available terminal dimensions and visible height
+  const termWidth = stdout?.columns ?? 80;
+  const termHeight = stdout?.rows ?? 24;
+  const visibleHeight = Math.max(1, termHeight - RESERVED_ROWS);
+
+  // Slice visible rows for virtual scroll rendering
+  const visibleRows = rows.slice(scrollOffset, scrollOffset + visibleHeight);
+
+  // Compute new scrollOffset after selectedIndex changes
+  function clampScroll(newIndex: number, currentOffset: number): number {
+    if (newIndex < currentOffset) return newIndex;
+    if (newIndex >= currentOffset + visibleHeight) return newIndex - visibleHeight + 1;
+    return currentOffset;
+  }
+
   useInput(
     (input, key) => {
       if (inputMode !== 'idle') return;
 
       // Navigation
       if (key.upArrow) {
-        setSelectedIndex(rowCount === 0 ? 0 : (selectedIndex - 1 + rowCount) % rowCount);
+        const newIdx = rowCount === 0 ? 0 : (selectedIndex - 1 + rowCount) % rowCount;
+        setSelectedIndex(newIdx);
+        setScrollOffset(prev => clampScroll(newIdx, prev));
         return;
       }
       if (key.downArrow) {
-        setSelectedIndex(rowCount === 0 ? 0 : (selectedIndex + 1) % rowCount);
+        const newIdx = rowCount === 0 ? 0 : (selectedIndex + 1) % rowCount;
+        setSelectedIndex(newIdx);
+        setScrollOffset(prev => clampScroll(newIdx, prev));
         return;
       }
 
@@ -103,16 +130,27 @@ export function App({ db, startupError }: AppProps) {
         return;
       }
 
-      // Complete item
+      // Complete / reactivate item (bidirectional toggle)
       if (input === 'c') {
         if (!currentRow) return;
-        if (currentRow.kind === 'task' && currentRow.task.status === 'active') {
-          completeTask(currentRow.task.id);
-          // Clamp selection
-          setSelectedIndex(Math.max(0, selectedIndex - 1));
-        } else if (currentRow.kind === 'subtask' && currentRow.subtask.status === 'active') {
-          completeSubtask(currentRow.subtask.id);
-          setSelectedIndex(Math.max(0, selectedIndex - 1));
+        if (currentRow.kind === 'task') {
+          if (currentRow.task.status === 'active') {
+            completeTask(currentRow.task.id);
+            const newIdx = Math.max(0, selectedIndex - 1);
+            setSelectedIndex(newIdx);
+            setScrollOffset(prev => clampScroll(newIdx, prev));
+          } else {
+            reactivateTask(currentRow.task.id);
+          }
+        } else if (currentRow.kind === 'subtask') {
+          if (currentRow.subtask.status === 'active') {
+            completeSubtask(currentRow.subtask.id);
+            const newIdx = Math.max(0, selectedIndex - 1);
+            setSelectedIndex(newIdx);
+            setScrollOffset(prev => clampScroll(newIdx, prev));
+          } else {
+            reactivateSubtask(currentRow.subtask.id);
+          }
         }
         return;
       }
@@ -125,7 +163,9 @@ export function App({ db, startupError }: AppProps) {
         } else {
           deleteSubtask(currentRow.subtask.id);
         }
-        setSelectedIndex(Math.max(0, selectedIndex - 1));
+        const newIdx = Math.max(0, selectedIndex - 1);
+        setSelectedIndex(newIdx);
+        setScrollOffset(prev => clampScroll(newIdx, prev));
         return;
       }
 
@@ -153,48 +193,54 @@ export function App({ db, startupError }: AppProps) {
       : undefined;
 
   return (
-    <Box flexDirection="column" paddingX={1}>
-      {startupError && (
-        <StatusMessage variant="warning">{startupError}</StatusMessage>
-      )}
+    <Box flexDirection="column" width={termWidth} height={termHeight} paddingX={1}>
+      {/* Scrollable content region — grows to fill all space above command bar */}
+      <Box flexDirection="column" flexGrow={1} overflowY="hidden">
+        {startupError && (
+          <StatusMessage variant="warning">{startupError}</StatusMessage>
+        )}
 
-      <Box flexDirection="column" marginBottom={1}>
-        <Text bold color="cyan">{BANNER}</Text>
-        {showCompleted && (
-          <Text dimColor>[showing completed]</Text>
+        <Box flexDirection="column" marginBottom={1}>
+          <Text bold color="cyan">{BANNER}</Text>
+          {showCompleted && (
+            <Text dimColor>[showing completed]</Text>
+          )}
+        </Box>
+
+        <TaskList
+          tasks={tasks}
+          subtasksMap={subtasksMap}
+          subtaskCounts={subtaskCounts}
+          activeSubtaskCounts={activeSubtaskCounts}
+          expandedTaskIds={expandedTaskIds}
+          selectedIndex={selectedIndex - scrollOffset}
+          visibleRows={visibleRows}
+          totalRowCount={rowCount}
+        />
+
+        {inputMode !== 'idle' && (
+          <Box marginTop={1}>
+            <TaskInput
+              mode={inputMode as 'addTask' | 'addSubtask'}
+              onConfirm={(title) => {
+                if (inputMode === 'addTask') {
+                  addTask(title);
+                } else if (inputMode === 'addSubtask' && selectedTaskId != null) {
+                  addSubtask(selectedTaskId, title);
+                }
+                setInputMode('idle');
+              }}
+              onCancel={() => setInputMode('idle')}
+            />
+          </Box>
         )}
       </Box>
 
-      <TaskList
-        tasks={tasks}
-        subtasksMap={subtasksMap}
-        subtaskCounts={subtaskCounts}
-        activeSubtaskCounts={activeSubtaskCounts}
-        expandedTaskIds={expandedTaskIds}
-        selectedIndex={selectedIndex}
-      />
-
-      {inputMode !== 'idle' && (
-        <Box marginTop={1}>
-          <TaskInput
-            mode={inputMode as 'addTask' | 'addSubtask'}
-            onConfirm={(title) => {
-              if (inputMode === 'addTask') {
-                addTask(title);
-              } else if (inputMode === 'addSubtask' && selectedTaskId != null) {
-                addSubtask(selectedTaskId, title);
-              }
-              setInputMode('idle');
-            }}
-            onCancel={() => setInputMode('idle')}
-          />
-        </Box>
-      )}
-
-      <Box marginTop={1}>
+      {/* Pinned command bar — always last child, locked to bottom by flex layout */}
+      <Box>
         <Text dimColor>
           {inputMode === 'idle'
-            ? '↑↓ navigate  a add  s subtask  c complete  d delete  h toggle  q quit'
+            ? '↑↓ navigate  a add  s subtask  c complete/reactivate  d delete  h toggle  q quit'
             : 'Enter confirm  Esc cancel'}
         </Text>
       </Box>
