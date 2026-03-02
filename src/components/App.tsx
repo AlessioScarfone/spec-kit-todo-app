@@ -32,8 +32,7 @@ export function App({ db, startupError }: AppProps) {
   const {
     tasks,
     subtasksMap,
-    subtaskCounts,
-    activeSubtaskCounts,
+    subtaskRatioCounts,
     inputMode,
     setInputMode,
     selectedIndex,
@@ -94,8 +93,8 @@ export function App({ db, startupError }: AppProps) {
       // Expand / collapse subtasks
       if (key.rightArrow) {
         if (currentRow?.kind === 'task') {
-          const count = subtaskCounts[currentRow.task.id] ?? 0;
-          if (count > 0 && !expandedTaskIds.has(currentRow.task.id)) {
+          const total = subtaskRatioCounts[currentRow.task.id]?.total ?? 0;
+          if (total > 0 && !expandedTaskIds.has(currentRow.task.id)) {
             toggleExpand(currentRow.task.id);
           }
         }
@@ -110,7 +109,7 @@ export function App({ db, startupError }: AppProps) {
 
       // Toggle expand/collapse subtasks with Tab
       if (key.tab) {
-        if (currentRow?.kind === 'task' && (subtaskCounts[currentRow.task.id] ?? 0) > 0) {
+        if (currentRow?.kind === 'task' && (subtaskRatioCounts[currentRow.task.id]?.total ?? 0) > 0) {
           toggleExpand(currentRow.task.id);
         }
         return;
@@ -210,8 +209,7 @@ export function App({ db, startupError }: AppProps) {
         <TaskList
           tasks={tasks}
           subtasksMap={subtasksMap}
-          subtaskCounts={subtaskCounts}
-          activeSubtaskCounts={activeSubtaskCounts}
+          subtaskRatioCounts={subtaskRatioCounts}
           expandedTaskIds={expandedTaskIds}
           selectedIndex={selectedIndex - scrollOffset}
           visibleRows={visibleRows}

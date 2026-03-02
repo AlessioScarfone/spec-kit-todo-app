@@ -33,8 +33,7 @@ export function buildFlatRows(
 interface TaskListProps {
   tasks: Task[];
   subtasksMap: Record<number, Subtask[]>;
-  subtaskCounts: Record<number, number>;
-  activeSubtaskCounts: Record<number, number>;
+  subtaskRatioCounts: Record<number, { completed: number; total: number }>;
   expandedTaskIds: Set<number>;
   selectedIndex: number;
   /** Pre-sliced rows for virtual scroll; when provided, overrides the built rows */
@@ -46,8 +45,7 @@ interface TaskListProps {
 export function TaskList({
   tasks,
   subtasksMap,
-  subtaskCounts,
-  activeSubtaskCounts,
+  subtaskRatioCounts,
   expandedTaskIds,
   selectedIndex,
   visibleRows,
@@ -66,15 +64,16 @@ export function TaskList({
       {rows.map((row, idx) => {
         const isSelected = idx === selectedIndex;
         if (row.kind === 'task') {
-          const count = subtaskCounts[row.task.id] ?? 0;
+          const ratio = subtaskRatioCounts[row.task.id] ?? { completed: 0, total: 0 };
           return (
             <TaskItem
               key={`task-${row.task.id}`}
               task={row.task}
               isSelected={isSelected}
               isExpanded={expandedTaskIds.has(row.task.id)}
-              hasSubtasks={count > 0}
-              activeSubtaskCount={activeSubtaskCounts[row.task.id] ?? 0}
+              hasSubtasks={ratio.total > 0}
+              subtaskCompleted={ratio.completed}
+              subtaskTotal={ratio.total}
             />
           );
         }
