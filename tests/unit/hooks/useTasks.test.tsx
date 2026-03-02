@@ -203,7 +203,7 @@ describe('005: subtaskRatioCounts', () => {
     expect(stateRef.current!.subtaskRatioCounts).toEqual({});
   });
 
-  it('(b) reflects { active: 1, total: 1 } after adding one subtask', () => {
+  it('(b) reflects { completed: 0, total: 1 } after adding one subtask', () => {
     const db = createTestDb();
     const stateRef = { current: null as HookState | null };
     const { rerender } = render(<HookCapture db={db} stateRef={stateRef} />);
@@ -212,10 +212,10 @@ describe('005: subtaskRatioCounts', () => {
     const taskId = stateRef.current!.tasks[0].id;
     stateRef.current!.addSubtask(taskId, 'Sub 1');
     rerender(<HookCapture db={db} stateRef={stateRef} />);
-    expect(stateRef.current!.subtaskRatioCounts[taskId]).toEqual({ active: 1, total: 1 });
+    expect(stateRef.current!.subtaskRatioCounts[taskId]).toEqual({ completed: 0, total: 1 });
   });
 
-  it('(c) active decrements to 0 and total stays at 1 after completing the only subtask', () => {
+  it('(c) completed increments to 1 and total stays at 1 after completing the only subtask', () => {
     const db = createTestDb();
     const stateRef = { current: null as HookState | null };
     const { rerender } = render(<HookCapture db={db} stateRef={stateRef} />);
@@ -227,7 +227,7 @@ describe('005: subtaskRatioCounts', () => {
     const subs = (db as any).prepare('SELECT * FROM subtasks WHERE task_id = ? AND status = ?').all(taskId, 'active');
     stateRef.current!.completeSubtask(subs[0].id);
     rerender(<HookCapture db={db} stateRef={stateRef} />);
-    expect(stateRef.current!.subtaskRatioCounts[taskId]).toEqual({ active: 0, total: 1 });
+    expect(stateRef.current!.subtaskRatioCounts[taskId]).toEqual({ completed: 1, total: 1 });
   });
 
   it('(d) entry disappears from map after all subtasks are deleted', () => {

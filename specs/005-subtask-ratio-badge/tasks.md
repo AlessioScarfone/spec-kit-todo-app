@@ -1,4 +1,4 @@
-# Tasks: Subtask Active/Total Ratio Badge
+# Tasks: Subtask Completed/Total Ratio Badge
 
 **Feature**: `005-subtask-ratio-badge`  
 **Input**: [plan.md](plan.md) · [spec.md](spec.md) · [data-model.md](data-model.md) · [research.md](research.md) · [contracts/component-props.md](contracts/component-props.md) · [quickstart.md](quickstart.md)  
@@ -28,9 +28,9 @@
 
 ⚠️ **Write tests FIRST — verify they FAIL before implementing**
 
-- [X] T002 [P] Write failing unit tests for `getSubtaskRatioCounts` (4 cases: empty taskIds, mixed states, zero-subtask task omitted, all-complete returns active=0) in `tests/unit/db/queries.test.ts`
-- [X] T003 [P] Write failing unit test for `subtaskRatioCounts` shape in `tests/unit/hooks/useTasks.test.tsx`
-- [X] T004 Implement `getSubtaskRatioCounts` in `src/db/queries.ts` — confirm T002 tests now pass
+- [X] T002 [P] Write failing unit tests for `getSubtaskRatioCounts` (4 cases: empty taskIds, mixed states, zero-subtask task omitted, all-complete returns completed=N) in `tests/unit/db/queries.test.ts`
+- [X] T003 [P] Write failing unit test for `subtaskRatioCounts` shape `{ completed, total }` in `tests/unit/hooks/useTasks.test.tsx`
+- [X] T004 Implement `getSubtaskRatioCounts` in `src/db/queries.ts` using `SUM(CASE WHEN status = 'complete')` for the numerator — confirm T002 tests now pass
 - [X] T005 Remove `getActiveSubtaskCounts` from `src/db/queries.ts` (no remaining callers after T006)
 - [X] T006 Update `useTasks` hook in `src/hooks/useTasks.ts` — replace the `subtaskCounts` per-task loop and `activeSubtaskCounts` useMemo with a single `subtaskRatioCounts` useMemo; remove both from hook return value; expose `subtaskRatioCounts` — confirm T003 test now passes
 
@@ -47,8 +47,8 @@
 ⚠️ **Write tests FIRST — verify they FAIL before implementing**
 
 - [X] T007 [US1] Write failing integration tests for US1 display (3 scenarios: `1/2` shown, `3/3` shown, no badge for zero subtasks) in `tests/integration/components/App.test.tsx`
-- [X] T008 [US1] Update `TaskItemProps` interface, prop defaults, and badge render in `src/components/TaskItem.tsx` — replace `activeSubtaskCount?: number` with `subtaskActive?: number` + `subtaskTotal?: number`; render `{subtaskActive ?? 0}/{subtaskTotal}` in `<Text dimColor>` when `subtaskTotal > 0`
-- [X] T009 [US1] Update `TaskListProps` and `TaskItem` call site in `src/components/TaskList.tsx` — replace `subtaskCounts: Record<number, number>` and `activeSubtaskCounts: Record<number, number>` with `subtaskRatioCounts: Record<number, { active: number; total: number }>`; derive `hasSubtasks` from `ratio.total > 0`; pass `subtaskActive={ratio.active}` and `subtaskTotal={ratio.total}`
+- [X] T008 [US1] Update `TaskItemProps` interface, prop defaults, and badge render in `src/components/TaskItem.tsx` — replace `activeSubtaskCount?: number` with `subtaskCompleted?: number` + `subtaskTotal?: number`; render `{subtaskCompleted ?? 0}/{subtaskTotal}` in `<Text dimColor>` when `subtaskTotal > 0`
+- [X] T009 [US1] Update `TaskListProps` and `TaskItem` call site in `src/components/TaskList.tsx` — replace `subtaskCounts: Record<number, number>` and `activeSubtaskCounts: Record<number, number>` with `subtaskRatioCounts: Record<number, { completed: number; total: number }>`; derive `hasSubtasks` from `ratio.total > 0`; pass `subtaskCompleted={ratio.completed}` and `subtaskTotal={ratio.total}`
 - [X] T010 [US1] Update `<TaskList>` props in `src/components/App.tsx` — pass `subtaskRatioCounts` instead of the removed `subtaskCounts` and `activeSubtaskCounts` — confirm T007 tests now pass
 
 **Checkpoint**: US1 complete — badge displays `active/total` correctly; all US1 tests green; `npm run build` compiles with no TypeScript errors
@@ -63,7 +63,7 @@
 
 ⚠️ **Write tests FIRST — verify they FAIL before implementing**
 
-- [X] T011 [US2] Write failing integration tests for US2 completion-triggered updates (3 scenarios: `2/3`→`1/3`, `1/2`→`0/2`, re-activate `0/1`→`1/1`) in `tests/integration/components/App.test.tsx`
+- [X] T011 [US2] Write failing integration tests for US2 completion-triggered updates (3 scenarios: `0/3`→`1/3`, `0/1`→`1/1`, reactivate `1/1`→`0/1`) in `tests/integration/components/App.test.tsx`
 - [X] T012 [US2] Run test suite — confirm T011 tests pass with no additional code changes; if any fail, trace and fix the reactive update chain in `src/hooks/useTasks.ts` or `src/db/queries.ts`
 
 **Checkpoint**: US2 complete — badge updates immediately on subtask completion/re-activation; all US2 tests green
@@ -78,7 +78,7 @@
 
 ⚠️ **Write tests FIRST — verify they FAIL before implementing**
 
-- [X] T013 [US3] Write failing integration tests for US3 add/delete mutations (4 scenarios: no-badge + add → `1/1`; `1/2` + add → `2/3`; `1/2` + delete completed → `1/1`; `1/2` + delete active → `0/1`) in `tests/integration/components/App.test.tsx`
+- [X] T013 [US3] Write failing integration tests for US3 add/delete mutations (4 scenarios: no-badge + add → `0/1`; `1/2` + add → `1/3`; `1/2` + delete completed → `0/1`; `1/2` + delete active → `1/1`) in `tests/integration/components/App.test.tsx`
 - [X] T014 [US3] Run test suite — confirm T013 tests pass with no additional code changes; if any fail, trace and fix in `src/hooks/useTasks.ts` or `src/db/queries.ts`
 
 **Checkpoint**: US3 complete — badge reflects correct totals after add/delete; all US3 tests green
