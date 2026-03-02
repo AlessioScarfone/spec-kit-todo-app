@@ -193,17 +193,17 @@ describe('US3: useTasks subtask management', () => {
 });
 
 // ────────────────────────────────────────────────────────────
-// 002: activeSubtaskCounts
+// 005: subtaskRatioCounts
 // ────────────────────────────────────────────────────────────
-describe('002: activeSubtaskCounts', () => {
+describe('005: subtaskRatioCounts', () => {
   it('(a) is {} when no tasks exist', () => {
     const db = createTestDb();
     const stateRef = { current: null as HookState | null };
     render(<HookCapture db={db} stateRef={stateRef} />);
-    expect(stateRef.current!.activeSubtaskCounts).toEqual({});
+    expect(stateRef.current!.subtaskRatioCounts).toEqual({});
   });
 
-  it('(b) reflects active count after addSubtask', () => {
+  it('(b) reflects { active: 1, total: 1 } after adding one subtask', () => {
     const db = createTestDb();
     const stateRef = { current: null as HookState | null };
     const { rerender } = render(<HookCapture db={db} stateRef={stateRef} />);
@@ -212,29 +212,10 @@ describe('002: activeSubtaskCounts', () => {
     const taskId = stateRef.current!.tasks[0].id;
     stateRef.current!.addSubtask(taskId, 'Sub 1');
     rerender(<HookCapture db={db} stateRef={stateRef} />);
-    expect(stateRef.current!.activeSubtaskCounts[taskId]).toBe(1);
+    expect(stateRef.current!.subtaskRatioCounts[taskId]).toEqual({ active: 1, total: 1 });
   });
 
-  it('(c) decrements after completeSubtask', () => {
-    const db = createTestDb();
-    const stateRef = { current: null as HookState | null };
-    const { rerender } = render(<HookCapture db={db} stateRef={stateRef} />);
-    stateRef.current!.addTask('Parent');
-    rerender(<HookCapture db={db} stateRef={stateRef} />);
-    const taskId = stateRef.current!.tasks[0].id;
-    stateRef.current!.addSubtask(taskId, 'Sub A');
-    rerender(<HookCapture db={db} stateRef={stateRef} />);
-    stateRef.current!.addSubtask(taskId, 'Sub B');
-    rerender(<HookCapture db={db} stateRef={stateRef} />);
-    expect(stateRef.current!.activeSubtaskCounts[taskId]).toBe(2);
-    // Get a subtask id by querying db directly
-    const subs = (db as any).prepare('SELECT * FROM subtasks WHERE task_id = ? AND status = ?').all(taskId, 'active');
-    stateRef.current!.completeSubtask(subs[0].id);
-    rerender(<HookCapture db={db} stateRef={stateRef} />);
-    expect(stateRef.current!.activeSubtaskCounts[taskId]).toBe(1);
-  });
-
-  it('(d) is absent/0 after all subtasks of a task are completed', () => {
+  it('(c) active decrements to 0 and total stays at 1 after completing the only subtask', () => {
     const db = createTestDb();
     const stateRef = { current: null as HookState | null };
     const { rerender } = render(<HookCapture db={db} stateRef={stateRef} />);
@@ -246,7 +227,23 @@ describe('002: activeSubtaskCounts', () => {
     const subs = (db as any).prepare('SELECT * FROM subtasks WHERE task_id = ? AND status = ?').all(taskId, 'active');
     stateRef.current!.completeSubtask(subs[0].id);
     rerender(<HookCapture db={db} stateRef={stateRef} />);
-    const count = stateRef.current!.activeSubtaskCounts[taskId] ?? 0;
-    expect(count).toBe(0);
+    expect(stateRef.current!.subtaskRatioCounts[taskId]).toEqual({ active: 0, total: 1 });
+  });
+
+  it('(d) entry disappears from map after all subtasks are deleted', () => {
+    const db = createTestDb();
+    const stateRef = { current: null as HookState | null };
+    const { rerender } = render(<HookCapture db={db} stateRef={stateRef} />);
+    stateRef.current!.addTask('Parent');
+    rerender(<HookCapture db={db} stateRef={stateRef} />);
+    const taskId = stateRef.current!.tasks[0].id;
+    stateRef.current!.addSubtask(taskId, 'Sub to delete');
+    rerender(<HookCapture db={db} stateRef={stateRef} />);
+    const subId = (db as any).prepare('SELECT id FROM subtasks WHERE task_id = ?').get(taskId)?.id;
+    stateRef.current!.deleteSubtask(subId);
+    rerender(<HookCapture db={db} stateRef={stateRef} />);
+    expect(stateRef.current!.subtaskRatioCounts[taskId]).toBeUndefined();
   });
 });
+
+// 002: activeSubtaskCounts — removed in feature 005 (replaced by subtaskRatioCounts above)

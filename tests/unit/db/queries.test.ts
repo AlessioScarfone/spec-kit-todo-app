@@ -2,17 +2,17 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import Database from 'better-sqlite3';
 import { runMigrations } from '../../../src/db/migrations.js';
 import {
-  getAllTasks,
-  insertTask,
-  completeTask,
-  completeSubtask,
-  deleteTask,
-  insertSubtask,
-  deleteSubtask,
-  getSubtasksForTask,
-  getActiveSubtaskCounts,
-  reactivateTask,
-  reactivateSubtask,
+    getAllTasks,
+    insertTask,
+    completeTask,
+    completeSubtask,
+    deleteTask,
+    insertSubtask,
+    deleteSubtask,
+    getSubtasksForTask,
+    getSubtaskRatioCounts,
+    reactivateTask,
+    reactivateSubtask,
 } from '../../../src/db/queries.js';
 
 function createTestDb() {
@@ -204,9 +204,9 @@ describe('Performance (SC-002)', () => {
 });
 
 // ────────────────────────────────────────────────────────────
-// 002: getActiveSubtaskCounts
+// 005: getSubtaskRatioCounts
 // ────────────────────────────────────────────────────────────
-describe('002: getActiveSubtaskCounts', () => {
+describe('005: getSubtaskRatioCounts', () => {
   let db: ReturnType<typeof Database>;
 
   beforeEach(() => {
@@ -214,52 +214,61 @@ describe('002: getActiveSubtaskCounts', () => {
   });
 
   it('(a) returns {} when taskIds is empty', () => {
-    const result = getActiveSubtaskCounts(db, []);
+    const result = getSubtaskRatioCounts(db, []);
     expect(result).toEqual({});
   });
 
-  it('(b) returns {} when no subtasks exist for given task IDs', () => {
+  it('(b) returns empty map when task has zero subtasks', () => {
     const task = insertTask(db, 'Task with no subs');
-    const result = getActiveSubtaskCounts(db, [task.id]);
-    expect(result).toEqual({});
+    const result = getSubtaskRatioCounts(db, [task.id]);
+    expect(result[task.id]).toBeUndefined();
   });
 
-  it('(c) counts only active subtasks per task', () => {
+  it('(c) returns correct active and total for a task with mixed subtasks', () => {
     const task = insertTask(db, 'Task');
     insertSubtask(db, task.id, 'Active 1');
-    insertSubtask(db, task.id, 'Active 2');
-    const result = getActiveSubtaskCounts(db, [task.id]);
-    expect(result[task.id]).toBe(2);
-  });
-
-  it('(d) ignores complete subtasks', () => {
-    const task = insertTask(db, 'Task');
-    const s1 = insertSubtask(db, task.id, 'Active');
-    const s2 = insertSubtask(db, task.id, 'To complete');
+    const s2 = insertSubtask(db, task.id, 'Complete 1');
     completeSubtask(db, s2.id);
-    const result = getActiveSubtaskCounts(db, [task.id]);
-    expect(result[task.id]).toBe(1);
-    void s1;
+    const result = getSubtaskRatioCounts(db, [task.id]);
+    expect(result[task.id]).toEqual({ active: 1, total: 2 });
   });
 
-  it('(e) handles multiple tasks in one call', () => {
+  it('(d) returns active=0 when all subtasks are completed', () => {
+    const task = insertTask(db, 'All done task');
+    const s1 = insertSubtask(db, task.id, 'Done 1');
+    const s2 = insertSubtask(db, task.id, 'Done 2');
+    completeSubtask(db, s1.id);
+    completeSubtask(db, s2.id);
+    const result = getSubtaskRatioCounts(db, [task.id]);
+    expect(result[task.id]).toEqual({ active: 0, total: 2 });
+  });
+
+  it('(e) handles multiple tasks in one call with correct per-task counts', () => {
     const t1 = insertTask(db, 'Task 1');
     const t2 = insertTask(db, 'Task 2');
-    insertSubtask(db, t1.id, 'T1-S1');
-    insertSubtask(db, t1.id, 'T1-S2');
-    insertSubtask(db, t2.id, 'T2-S1');
-    const result = getActiveSubtaskCounts(db, [t1.id, t2.id]);
-    expect(result[t1.id]).toBe(2);
-    expect(result[t2.id]).toBe(1);
+    insertSubtask(db, t1.id, 'T1-Active');
+    const t1s2 = insertSubtask(db, t1.id, 'T1-Done');
+    completeSubtask(db, t1s2.id);
+    insertSubtask(db, t2.id, 'T2-Active 1');
+    insertSubtask(db, t2.id, 'T2-Active 2');
+    insertSubtask(db, t2.id, 'T2-Active 3');
+    const result = getSubtaskRatioCounts(db, [t1.id, t2.id]);
+    expect(result[t1.id]).toEqual({ active: 1, total: 2 });
+    expect(result[t2.id]).toEqual({ active: 3, total: 3 });
   });
 
-  it('(f) correctly counts 12+ active subtasks without truncation', () => {
+  it('(f) handles 12+ subtasks without truncation', () => {
     const task = insertTask(db, 'Busy task');
-    for (let i = 0; i < 13; i++) {
+    for (let i = 0; i < 12; i++) {
       insertSubtask(db, task.id, `Sub ${i}`);
     }
-    const result = getActiveSubtaskCounts(db, [task.id]);
-    expect(result[task.id]).toBe(13);
+    // Complete 5 of them
+    const subs = db.prepare('SELECT id FROM subtasks WHERE task_id = ? LIMIT 5').all(task.id) as { id: number }[];
+    for (const sub of subs) {
+      completeSubtask(db, sub.id);
+    }
+    const result = getSubtaskRatioCounts(db, [task.id]);
+    expect(result[task.id]).toEqual({ active: 7, total: 12 });
   });
 });
 
