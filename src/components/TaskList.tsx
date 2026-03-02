@@ -1,4 +1,3 @@
-import React from 'react';
 import { Box } from 'ink';
 import type { Task, Subtask } from '../types.js';
 import { TaskItem } from './TaskItem.js';

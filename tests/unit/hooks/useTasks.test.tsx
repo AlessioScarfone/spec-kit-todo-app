@@ -1,11 +1,9 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import Database from 'better-sqlite3';
-import React from 'react';
 import { Box, Text } from 'ink';
 import { render, cleanup } from 'ink-testing-library';
 import { runMigrations } from '../../../src/db/migrations.js';
 import { useTasks } from '../../../src/hooks/useTasks.js';
-import type { Task, Subtask } from '../../../src/types.js';
 
 afterEach(() => {
   cleanup();

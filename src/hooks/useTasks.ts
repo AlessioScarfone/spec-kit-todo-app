@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import type { Database } from 'better-sqlite3';
-import type { Task, Subtask, InputMode } from '../types.js';
+import type { Subtask, InputMode } from '../types.js';
 import * as queries from '../db/queries.js';
 
 export function useTasks(db: Database) {
