@@ -37,10 +37,13 @@ Behavior:
 |---|---|---|
 | `→` (right arrow) | Expand subtasks under selected task | Selected row is a top-level Task with subtasks; subtasks currently collapsed |
 | `←` (left arrow) | Collapse subtasks under selected task | Selected row is a top-level Task; subtasks currently expanded |
+| `Tab` | Toggle (expand if collapsed, collapse if expanded) subtask list under selected task | Selected row is a top-level Task with subtasks |
 
 Behavior:
 - `→` and `←` are no-ops when the selected row is a Subtask
 - `→` is a no-op when the selected Task has no subtasks
+- `Tab` is a no-op when the selected row is a Subtask
+- `Tab` is a no-op when the selected Task has no subtasks
 - Expanded/collapsed state is not persisted between sessions
 
 ### Task Lifecycle
