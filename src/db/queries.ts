@@ -29,6 +29,10 @@ export function completeTask(db: Database, id: number): void {
   complete();
 }
 
+export function reactivateTask(db: Database, id: number): void {
+  db.prepare("UPDATE tasks SET status = 'active' WHERE id = ?").run(id);
+}
+
 export function deleteTask(db: Database, id: number): void {
   db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
 }
@@ -61,6 +65,10 @@ export function insertSubtask(db: Database, taskId: number, title: string): Subt
 
 export function completeSubtask(db: Database, id: number): void {
   db.prepare("UPDATE subtasks SET status = 'complete' WHERE id = ?").run(id);
+}
+
+export function reactivateSubtask(db: Database, id: number): void {
+  db.prepare("UPDATE subtasks SET status = 'active' WHERE id = ?").run(id);
 }
 
 export function deleteSubtask(db: Database, id: number): void {

@@ -670,3 +670,221 @@ describe('003: Tab key subtask toggle', () => {
     expect(lastFrame()).not.toContain('Arrow Sub');
   });
 });
+
+// ────────────────────────────────────────────────────────────
+// 004 T002: Bidirectional "c" toggle (US1)
+// ────────────────────────────────────────────────────────────
+describe('004 T002: Bidirectional "c" toggle', () => {
+  it('(1) pressing c on a completed task reverts it to active', async () => {
+    const db = createTestDb();
+    const { lastFrame, stdin } = render(<App db={db} />);
+    // Add task and complete it
+    stdin.write('a');
+    await sleep(50);
+    stdin.write('Reactivate me');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    stdin.write('c'); // complete
+    await sleep(50);
+    expect(lastFrame()).not.toContain('Reactivate me');
+    // Toggle show completed
+    stdin.write('h');
+    await sleep(50);
+    expect(lastFrame()).toContain('Reactivate me');
+    // Press c on the completed task — should revert to active
+    stdin.write('c');
+    await sleep(50);
+    // Hide completed again — the task should still be visible (it's now active)
+    stdin.write('h');
+    await sleep(50);
+    expect(lastFrame()).toContain('Reactivate me');
+  });
+
+  it('(2) pressing c on a completed subtask reverts it to active', async () => {
+    const db = createTestDb();
+    const { lastFrame, stdin } = render(<App db={db} />);
+    stdin.write('a');
+    await sleep(50);
+    stdin.write('Parent T002');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    stdin.write('s');
+    await sleep(50);
+    stdin.write('Child T002');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    // Expand and complete the subtask
+    stdin.write(RIGHT);
+    await sleep(50);
+    stdin.write(DOWN); // to subtask
+    await sleep(50);
+    stdin.write('c'); // complete subtask
+    await sleep(50);
+    // Subtask hidden in active view
+    expect(lastFrame()).not.toContain('Child T002');
+    // Show completed
+    stdin.write('h');
+    await sleep(50);
+    expect(lastFrame()).toContain('Child T002');
+    // Navigate to subtask and reactivate
+    stdin.write(DOWN); // navigate to the subtask row
+    await sleep(50);
+    stdin.write('c'); // reactivate
+    await sleep(50);
+    // Hide completed — subtask should still appear (now active)
+    stdin.write('h');
+    await sleep(50);
+    expect(lastFrame()).toContain('Child T002');
+  });
+
+  it('(3) pressing c on an active task still completes it (existing behaviour preserved)', async () => {
+    const db = createTestDb();
+    const { lastFrame, stdin } = render(<App db={db} />);
+    stdin.write('a');
+    await sleep(50);
+    stdin.write('Still completes');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    expect(lastFrame()).toContain('Still completes');
+    stdin.write('c'); // complete active task
+    await sleep(50);
+    expect(lastFrame()).not.toContain('Still completes');
+  });
+
+  it('(4) a reactivated task can be completed again in the same session', async () => {
+    const db = createTestDb();
+    const { lastFrame, stdin } = render(<App db={db} />);
+    stdin.write('a');
+    await sleep(50);
+    stdin.write('Cycle task');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    // complete → reactivate → complete cycle
+    stdin.write('c'); // complete
+    await sleep(50);
+    stdin.write('h'); // show completed
+    await sleep(50);
+    stdin.write('c'); // reactivate
+    await sleep(50);
+    stdin.write('h'); // hide completed again
+    await sleep(50);
+    expect(lastFrame()).toContain('Cycle task'); // now active
+    stdin.write('c'); // complete again
+    await sleep(50);
+    expect(lastFrame()).not.toContain('Cycle task'); // hidden again
+  });
+
+  it('(5) when all tasks are completed, reactivating one makes it appear in active list', async () => {
+    const db = createTestDb();
+    const { lastFrame, stdin } = render(<App db={db} />);
+    stdin.write('a');
+    await sleep(50);
+    stdin.write('Only task');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    stdin.write('c'); // complete — now no active tasks
+    await sleep(50);
+    // Show completed to access the task
+    stdin.write('h');
+    await sleep(50);
+    stdin.write('c'); // reactivate
+    await sleep(50);
+    stdin.write('h'); // hide completed
+    await sleep(50);
+    // The reactivated task should now appear in active list
+    expect(lastFrame()).toContain('Only task');
+  });
+
+  it('(6) two c keypresses on the same row produce deterministic final state', async () => {
+    const db = createTestDb();
+    const { lastFrame, stdin } = render(<App db={db} />);
+    stdin.write('a');
+    await sleep(50);
+    stdin.write('Toggle twice');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    // Press c twice quickly on an active task
+    stdin.write('c');
+    await sleep(10);
+    stdin.write('c');
+    await sleep(50);
+    // After two c presses: first completes and hides, second on an empty list is a no-op
+    // Task should be hidden (completed after first c)
+    expect(lastFrame()).not.toContain('Toggle twice');
+  });
+});
+
+// ────────────────────────────────────────────────────────────
+// 004 T006: Command bar hint text (US2)
+// ────────────────────────────────────────────────────────────
+describe('004 T006: Command bar hint text', () => {
+  it('idle-mode hint contains "complete/reactivate"', async () => {
+    const db = createTestDb();
+    const { lastFrame } = render(<App db={db} />);
+    await sleep(50);
+    expect(lastFrame()).toContain('complete/reactivate');
+  });
+});
+
+// ────────────────────────────────────────────────────────────
+// 004 T008: Fullscreen layout (US3)
+// ────────────────────────────────────────────────────────────
+describe('004 T008: Fullscreen layout', () => {
+  it('(1) command bar text is present in the rendered output', async () => {
+    const db = createTestDb();
+    const { lastFrame } = render(<App db={db} />);
+    await sleep(50);
+    const frame = lastFrame() ?? '';
+    // Hint text should appear at the bottom
+    expect(frame).toContain('navigate');
+  });
+
+  it('(2) with many tasks, command bar hint remains present after scrolling', async () => {
+    const db = createTestDb();
+    const { lastFrame, stdin } = render(<App db={db} />);
+    // Add 20 tasks
+    for (let i = 1; i <= 20; i++) {
+      stdin.write('a');
+      await sleep(30);
+      stdin.write(`Task ${i}`);
+      await sleep(30);
+      stdin.write(ENTER);
+      await sleep(30);
+    }
+    // Scroll down through all tasks
+    for (let i = 0; i < 19; i++) {
+      stdin.write(DOWN);
+      await sleep(20);
+    }
+    const frame = lastFrame() ?? '';
+    // Command bar hint must always be visible
+    expect(frame).toContain('navigate');
+  });
+
+  it('(3) selected task stays visible while scrolling down', async () => {
+    const db = createTestDb();
+    const { lastFrame, stdin } = render(<App db={db} />);
+    for (let i = 1; i <= 15; i++) {
+      stdin.write('a');
+      await sleep(30);
+      stdin.write(`Scroll task ${i}`);
+      await sleep(30);
+      stdin.write(ENTER);
+      await sleep(30);
+    }
+    // Navigate to last task
+    for (let i = 0; i < 14; i++) {
+      stdin.write(DOWN);
+      await sleep(20);
+    }
+    // The last task should be visible in current frame
+    expect(lastFrame()).toContain('Scroll task 15');
+  });
+});

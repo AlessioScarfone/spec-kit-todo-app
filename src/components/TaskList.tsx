@@ -37,6 +37,10 @@ interface TaskListProps {
   activeSubtaskCounts: Record<number, number>;
   expandedTaskIds: Set<number>;
   selectedIndex: number;
+  /** Pre-sliced rows for virtual scroll; when provided, overrides the built rows */
+  visibleRows?: FlatRow[];
+  /** Total flat row count (before slicing); used to detect empty state */
+  totalRowCount?: number;
 }
 
 export function TaskList({
@@ -46,10 +50,14 @@ export function TaskList({
   activeSubtaskCounts,
   expandedTaskIds,
   selectedIndex,
+  visibleRows,
+  totalRowCount,
 }: TaskListProps) {
-  const rows = buildFlatRows(tasks, subtasksMap, expandedTaskIds);
+  const builtRows = buildFlatRows(tasks, subtasksMap, expandedTaskIds);
+  const rows = visibleRows ?? builtRows;
+  const effectiveTotal = totalRowCount ?? builtRows.length;
 
-  if (rows.length === 0) {
+  if (effectiveTotal === 0) {
     return <EmptyState />;
   }
 
