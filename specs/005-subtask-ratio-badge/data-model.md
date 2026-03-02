@@ -1,4 +1,4 @@
-# Data Model: Subtask Active/Total Ratio Badge
+# Data Model: Subtask Completed/Total Ratio Badge
 
 **Feature**: `005-subtask-ratio-badge`  
 **Phase**: 1 — Design  
@@ -8,7 +8,7 @@
 
 ## Overview
 
-This feature introduces **no new database tables and no schema changes**. The active/total ratio is a pair of derived read-only aggregates computed from the existing `subtasks` table in a single query.
+This feature introduces **no new database tables and no schema changes**. The completed/total ratio is a pair of derived read-only aggregates computed from the existing `subtasks` table in a single query.
 
 ---
 
@@ -44,8 +44,8 @@ The badge values are not stored — they are derived on every render cycle refre
 ### Derivation Rules
 
 ```
-total(taskId)  = COUNT(*)                                         FROM subtasks WHERE task_id = taskId
-active(taskId) = COUNT(*) FILTER (WHERE status = 'active')        FROM subtasks WHERE task_id = taskId
+total(taskId)     = COUNT(*)                                          FROM subtasks WHERE task_id = taskId
+completed(taskId) = COUNT(*) FILTER (WHERE status = 'complete')       FROM subtasks WHERE task_id = taskId
 ```
 
 Combined into a single SQL query across all visible task IDs:
@@ -53,8 +53,8 @@ Combined into a single SQL query across all visible task IDs:
 ```sql
 SELECT
   task_id,
-  COUNT(*)                                            AS total,
-  SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) AS active
+  COUNT(*)                                             AS total,
+  SUM(CASE WHEN status = 'complete' THEN 1 ELSE 0 END) AS completed
 FROM subtasks
 WHERE task_id IN (…)
 GROUP BY task_id
@@ -63,10 +63,10 @@ GROUP BY task_id
 ### Result Type
 
 ```typescript
-type SubtaskRatioCounts = Record<number, { active: number; total: number }>;
+type SubtaskRatioCounts = Record<number, { completed: number; total: number }>;
 ```
 
-Tasks with zero subtasks will be **absent** from the result map. Consumers must default to `{ active: 0, total: 0 }` for absent keys.
+Tasks with zero subtasks will be **absent** from the result map. Consumers must default to `{ completed: 0, total: 0 }` for absent keys.
 
 ---
 
@@ -74,7 +74,7 @@ Tasks with zero subtasks will be **absent** from the result map. Consumers must 
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `subtaskRatioCounts` | `Record<number, { active: number; total: number }>` | Replaces both `subtaskCounts` and `activeSubtaskCounts` from feature 002 |
+| `subtaskRatioCounts` | `Record<number, { completed: number; total: number }>` | Replaces both `subtaskCounts` and `activeSubtaskCounts` from feature 002 |
 
 ---
 
@@ -83,16 +83,16 @@ Tasks with zero subtasks will be **absent** from the result map. Consumers must 
 | Condition | Badge shown | Display |
 |-----------|-------------|---------|
 | `total === 0` (key absent or `total = 0`) | No | — |
-| `total > 0` | Yes | `{active}/{total}` in dimmed style |
+| `total > 0` | Yes | `{completed}/{total}` in dimmed style |
 
 Examples:
 
 | State | Badge |
 |-------|-------|
-| 1 active, 1 complete subtask | `1/2` |
-| 3 active, 0 complete subtasks | `3/3` |
-| 0 active, 2 complete subtasks | `0/2` |
-| 12 active, 12 total subtasks | `12/12` |
+| 1 completed, 1 active subtask (2 total) | `1/2` |
+| 0 completed, 3 active subtasks | `0/3` |
+| 2 completed, 0 active subtasks | `2/2` |
+| 5 completed, 12 total subtasks | `5/12` |
 
 ---
 

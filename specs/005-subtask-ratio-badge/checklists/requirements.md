@@ -1,4 +1,4 @@
-# Specification Quality Checklist: Subtask Active/Total Ratio Badge
+# Specification Quality Checklist: Subtask Completed/Total Ratio Badge
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-03-02

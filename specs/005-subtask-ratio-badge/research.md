@@ -68,7 +68,7 @@ Removing it cleans up the hook and component interfaces without losing functiona
 **Rationale**: Two orthogonal values should be two props, not a compound object — consistent with the existing prop style of this component (all primitive). The new prop names are unambiguous about which count each represents.
 
 **Alternatives considered**:
-- Single object prop `subtaskRatio?: { active: number; total: number }` — rejected; object props introduce unnecessary wrapping and are less idiomatic in this component.
+- Single object prop `subtaskRatio?: { completed: number; total: number }` — rejected; object props introduce unnecessary wrapping and are less idiomatic in this component.
 - Keep `activeSubtaskCount` + add `totalSubtaskCount` — rejected; the old name no longer conveys the full picture post-rename.
 
 ---
