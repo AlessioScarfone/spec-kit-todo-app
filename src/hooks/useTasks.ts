@@ -76,6 +76,22 @@ export function useTasks(db: Database) {
     [db, reload]
   );
 
+  const reactivateTask = useCallback(
+    (id: number) => {
+      queries.reactivateTask(db, id);
+      reload();
+    },
+    [db, reload]
+  );
+
+  const reactivateSubtask = useCallback(
+    (id: number) => {
+      queries.reactivateSubtask(db, id);
+      reload();
+    },
+    [db, reload]
+  );
+
   const deleteTask = useCallback(
     (id: number) => {
       queries.deleteTask(db, id);
@@ -130,6 +146,8 @@ export function useTasks(db: Database) {
     addTask,
     completeTask,
     completeSubtask,
+    reactivateTask,
+    reactivateSubtask,
     deleteTask,
     toggleShowCompleted,
     addSubtask,
