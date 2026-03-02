@@ -17,6 +17,7 @@ export function App({ db, startupError }: AppProps) {
     tasks,
     subtasksMap,
     subtaskCounts,
+    activeSubtaskCounts,
     inputMode,
     setInputMode,
     selectedIndex,
@@ -152,6 +153,7 @@ export function App({ db, startupError }: AppProps) {
         tasks={tasks}
         subtasksMap={subtasksMap}
         subtaskCounts={subtaskCounts}
+        activeSubtaskCounts={activeSubtaskCounts}
         expandedTaskIds={expandedTaskIds}
         selectedIndex={selectedIndex}
       />

@@ -10,6 +10,7 @@ import {
     insertSubtask,
     deleteSubtask,
     getSubtasksForTask,
+    getActiveSubtaskCounts,
 } from '../../../src/db/queries.js';
 
 function createTestDb() {
@@ -197,5 +198,65 @@ describe('Performance (SC-002)', () => {
 
     expect(results).toHaveLength(500);
     expect(elapsed).toBeLessThan(200);
+  });
+});
+
+// ────────────────────────────────────────────────────────────
+// 002: getActiveSubtaskCounts
+// ────────────────────────────────────────────────────────────
+describe('002: getActiveSubtaskCounts', () => {
+  let db: ReturnType<typeof Database>;
+
+  beforeEach(() => {
+    db = createTestDb();
+  });
+
+  it('(a) returns {} when taskIds is empty', () => {
+    const result = getActiveSubtaskCounts(db, []);
+    expect(result).toEqual({});
+  });
+
+  it('(b) returns {} when no subtasks exist for given task IDs', () => {
+    const task = insertTask(db, 'Task with no subs');
+    const result = getActiveSubtaskCounts(db, [task.id]);
+    expect(result).toEqual({});
+  });
+
+  it('(c) counts only active subtasks per task', () => {
+    const task = insertTask(db, 'Task');
+    insertSubtask(db, task.id, 'Active 1');
+    insertSubtask(db, task.id, 'Active 2');
+    const result = getActiveSubtaskCounts(db, [task.id]);
+    expect(result[task.id]).toBe(2);
+  });
+
+  it('(d) ignores complete subtasks', () => {
+    const task = insertTask(db, 'Task');
+    const s1 = insertSubtask(db, task.id, 'Active');
+    const s2 = insertSubtask(db, task.id, 'To complete');
+    completeSubtask(db, s2.id);
+    const result = getActiveSubtaskCounts(db, [task.id]);
+    expect(result[task.id]).toBe(1);
+    void s1;
+  });
+
+  it('(e) handles multiple tasks in one call', () => {
+    const t1 = insertTask(db, 'Task 1');
+    const t2 = insertTask(db, 'Task 2');
+    insertSubtask(db, t1.id, 'T1-S1');
+    insertSubtask(db, t1.id, 'T1-S2');
+    insertSubtask(db, t2.id, 'T2-S1');
+    const result = getActiveSubtaskCounts(db, [t1.id, t2.id]);
+    expect(result[t1.id]).toBe(2);
+    expect(result[t2.id]).toBe(1);
+  });
+
+  it('(f) correctly counts 12+ active subtasks without truncation', () => {
+    const task = insertTask(db, 'Busy task');
+    for (let i = 0; i < 13; i++) {
+      insertSubtask(db, task.id, `Sub ${i}`);
+    }
+    const result = getActiveSubtaskCounts(db, [task.id]);
+    expect(result[task.id]).toBe(13);
   });
 });

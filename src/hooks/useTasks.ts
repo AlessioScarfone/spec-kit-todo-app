@@ -42,6 +42,13 @@ export function useTasks(db: Database) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [db, tasks, refreshToken]);
 
+  // Active-only subtask counts for badge display
+  const activeSubtaskCounts = useMemo(
+    () => queries.getActiveSubtaskCounts(db, tasks.map((t) => t.id)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [db, tasks, refreshToken]
+  );
+
   // Reload after expand/collapse so subtask list is freshly fetched
   const reload = forceReload;
 
@@ -113,6 +120,7 @@ export function useTasks(db: Database) {
     tasks,
     subtasksMap,
     subtaskCounts,
+    activeSubtaskCounts,
     inputMode,
     setInputMode,
     selectedIndex,
