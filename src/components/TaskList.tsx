@@ -34,6 +34,7 @@ interface TaskListProps {
   tasks: Task[];
   subtasksMap: Record<number, Subtask[]>;
   subtaskCounts: Record<number, number>;
+  activeSubtaskCounts: Record<number, number>;
   expandedTaskIds: Set<number>;
   selectedIndex: number;
 }
@@ -42,6 +43,7 @@ export function TaskList({
   tasks,
   subtasksMap,
   subtaskCounts,
+  activeSubtaskCounts,
   expandedTaskIds,
   selectedIndex,
 }: TaskListProps) {
@@ -64,6 +66,7 @@ export function TaskList({
               isSelected={isSelected}
               isExpanded={expandedTaskIds.has(row.task.id)}
               hasSubtasks={count > 0}
+              activeSubtaskCount={activeSubtaskCounts[row.task.id] ?? 0}
             />
           );
         }

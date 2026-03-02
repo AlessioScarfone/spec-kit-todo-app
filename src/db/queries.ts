@@ -66,3 +66,25 @@ export function completeSubtask(db: Database, id: number): void {
 export function deleteSubtask(db: Database, id: number): void {
   db.prepare('DELETE FROM subtasks WHERE id = ?').run(id);
 }
+
+// ──────────────────────────────────────
+// Aggregate queries
+// ──────────────────────────────────────
+
+export function getActiveSubtaskCounts(
+  db: Database,
+  taskIds: number[]
+): Record<number, number> {
+  if (taskIds.length === 0) return {};
+  const placeholders = taskIds.map(() => '?').join(', ');
+  const rows = db
+    .prepare(
+      `SELECT task_id, COUNT(*) as cnt FROM subtasks WHERE task_id IN (${placeholders}) AND status = 'active' GROUP BY task_id`
+    )
+    .all(...taskIds) as { task_id: number; cnt: number }[];
+  const result: Record<number, number> = {};
+  for (const row of rows) {
+    result[row.task_id] = row.cnt;
+  }
+  return result;
+}
