@@ -224,23 +224,23 @@ describe('005: getSubtaskRatioCounts', () => {
     expect(result[task.id]).toBeUndefined();
   });
 
-  it('(c) returns correct active and total for a task with mixed subtasks', () => {
+  it('(c) returns correct completed and total for a task with mixed subtasks', () => {
     const task = insertTask(db, 'Task');
     insertSubtask(db, task.id, 'Active 1');
     const s2 = insertSubtask(db, task.id, 'Complete 1');
     completeSubtask(db, s2.id);
     const result = getSubtaskRatioCounts(db, [task.id]);
-    expect(result[task.id]).toEqual({ active: 1, total: 2 });
+    expect(result[task.id]).toEqual({ completed: 1, total: 2 });
   });
 
-  it('(d) returns active=0 when all subtasks are completed', () => {
+  it('(d) returns completed=2 when all subtasks are completed', () => {
     const task = insertTask(db, 'All done task');
     const s1 = insertSubtask(db, task.id, 'Done 1');
     const s2 = insertSubtask(db, task.id, 'Done 2');
     completeSubtask(db, s1.id);
     completeSubtask(db, s2.id);
     const result = getSubtaskRatioCounts(db, [task.id]);
-    expect(result[task.id]).toEqual({ active: 0, total: 2 });
+    expect(result[task.id]).toEqual({ completed: 2, total: 2 });
   });
 
   it('(e) handles multiple tasks in one call with correct per-task counts', () => {
@@ -253,8 +253,8 @@ describe('005: getSubtaskRatioCounts', () => {
     insertSubtask(db, t2.id, 'T2-Active 2');
     insertSubtask(db, t2.id, 'T2-Active 3');
     const result = getSubtaskRatioCounts(db, [t1.id, t2.id]);
-    expect(result[t1.id]).toEqual({ active: 1, total: 2 });
-    expect(result[t2.id]).toEqual({ active: 3, total: 3 });
+    expect(result[t1.id]).toEqual({ completed: 1, total: 2 });
+    expect(result[t2.id]).toEqual({ completed: 0, total: 3 });
   });
 
   it('(f) handles 12+ subtasks without truncation', () => {
@@ -268,7 +268,7 @@ describe('005: getSubtaskRatioCounts', () => {
       completeSubtask(db, sub.id);
     }
     const result = getSubtaskRatioCounts(db, [task.id]);
-    expect(result[task.id]).toEqual({ active: 7, total: 12 });
+    expect(result[task.id]).toEqual({ completed: 5, total: 12 });
   });
 });
 

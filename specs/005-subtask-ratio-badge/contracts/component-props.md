@@ -29,11 +29,11 @@ interface TaskItemProps {
   hasSubtasks: boolean;
 
   /**
-   * Number of non-completed subtasks belonging to this task.
+   * Number of completed subtasks belonging to this task.
    * Used as the numerator of the ratio badge.
    * Defaults to 0. Badge is hidden when subtaskTotal is 0.
    */
-  subtaskActive?: number;
+  subtaskCompleted?: number;
 
   /**
    * Total number of subtasks (any status) belonging to this task.
@@ -48,11 +48,11 @@ interface TaskItemProps {
 
 ## Badge Rendering Rules
 
-| `subtaskTotal` | `subtaskActive` | Rendered badge |
-|----------------|-----------------|----------------|
-| 0 or absent    | any             | *(hidden)*     |
+| `subtaskTotal` | `subtaskCompleted` | Rendered badge |
+|----------------|-----------------|-------------|
+| 0 or absent    | any             | *(hidden)*  |
 | > 0            | 0               | `0/{total}` dimmed |
-| > 0            | > 0             | `{active}/{total}` dimmed |
+| > 0            | > 0             | `{completed}/{total}` dimmed |
 
 **Style**: the badge is rendered with `<Text dimColor>` — identical visual treatment to the `(done)` label. No brackets, no icons.
 
@@ -64,7 +64,7 @@ interface TaskItemProps {
 
 | v1.0 prop (feature 002) | v2.0 replacement |
 |-------------------------|-----------------|
-| `activeSubtaskCount?: number` | `subtaskActive?: number` + `subtaskTotal?: number` |
+| `activeSubtaskCount?: number` | `subtaskCompleted?: number` + `subtaskTotal?: number` |
 
 Callers producing only `activeSubtaskCount` will no longer compile — TypeScript will surface this as a type error at `TaskList.tsx`.
 
@@ -95,13 +95,13 @@ interface TaskListProps {
 
 ```typescript
 /**
- * Returns active and total subtask counts for each of the given task IDs.
- * Tasks with zero subtasks are absent from the result — callers must default to { active: 0, total: 0 }.
+ * Returns completed and total subtask counts for each of the given task IDs.
+ * Tasks with zero subtasks are absent from the result — callers must default to { completed: 0, total: 0 }.
  */
 function getSubtaskRatioCounts(
   db: Database,
   taskIds: number[]
-): Record<number, { active: number; total: number }>
+): Record<number, { completed: number; total: number }>
 ```
 
 Replaces `getActiveSubtaskCounts`, which is removed.

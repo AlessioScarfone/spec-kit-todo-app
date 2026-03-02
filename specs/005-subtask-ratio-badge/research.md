@@ -1,4 +1,4 @@
-# Research: Subtask Active/Total Ratio Badge
+# Research: Subtask Completed/Total Ratio Badge
 
 **Feature**: `005-subtask-ratio-badge`  
 **Phase**: 0 — Research  
@@ -25,13 +25,13 @@ The following unknowns were extracted from the Technical Context analysis and re
 
 ### RQ-2: What is the cheapest way to retrieve both active and total subtask counts?
 
-**Decision**: Add a single combined aggregate query `getSubtaskRatioCounts` that returns `Record<number, { active: number; total: number }>` for all given task IDs in one SQL round-trip.
+**Decision**: Add a single combined aggregate query `getSubtaskRatioCounts` that returns `Record<number, { completed: number; total: number }>` for all given task IDs in one SQL round-trip.
 
 ```sql
 SELECT
   task_id,
-  COUNT(*)                                        AS total,
-  SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) AS active
+  COUNT(*)                                           AS total,
+  SUM(CASE WHEN status = 'complete' THEN 1 ELSE 0 END) AS completed
 FROM subtasks
 WHERE task_id IN (…placeholders…)
 GROUP BY task_id
@@ -63,7 +63,7 @@ Removing it cleans up the hook and component interfaces without losing functiona
 
 ### RQ-4: What changes are needed in `TaskItem.tsx` props?
 
-**Decision**: Replace `activeSubtaskCount?: number` with two props: `subtaskActive?: number` and `subtaskTotal?: number`. Badge renders `{subtaskActive}/{subtaskTotal}` when `subtaskTotal > 0`; hidden when `subtaskTotal === 0` or both are undefined.
+**Decision**: Replace `activeSubtaskCount?: number` with two props: `subtaskCompleted?: number` and `subtaskTotal?: number`. Badge renders `{subtaskCompleted}/{subtaskTotal}` when `subtaskTotal > 0`; hidden when `subtaskTotal === 0` or both are undefined.
 
 **Rationale**: Two orthogonal values should be two props, not a compound object — consistent with the existing prop style of this component (all primitive). The new prop names are unambiguous about which count each represents.
 
@@ -88,7 +88,7 @@ Removing it cleans up the hook and component interfaces without losing functiona
 | # | Decision | Rationale |
 |---|----------|-----------|
 | 1 | New `getSubtaskRatioCounts` query replaces `getActiveSubtaskCounts` + `subtaskCounts` loop | Single SQL round-trip; simpler hook |
-| 2 | `useTasks` exposes `subtaskRatioCounts: Record<number, {active: number; total: number}>` | One source of truth for both numerator and denominator |
-| 3 | `TaskItem` props renamed to `subtaskActive` + `subtaskTotal` | Two orthogonal primitive props; clear naming |
+| 2 | `useTasks` exposes `subtaskRatioCounts: Record<number, {completed: number; total: number}>` | One source of truth for both numerator and denominator |
+| 3 | `TaskItem` props renamed to `subtaskCompleted` + `subtaskTotal` | Two orthogonal primitive props; clear naming |
 | 4 | `TaskList` derives `hasSubtasks` from `total > 0`; passes both props to `TaskItem` | No separate `subtaskCounts` map needed |
 | 5 | No schema changes; no new dependencies | Pure derived data; Principle III compliant |

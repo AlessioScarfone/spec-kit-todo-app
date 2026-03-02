@@ -82,22 +82,22 @@ export function deleteSubtask(db: Database, id: number): void {
 export function getSubtaskRatioCounts(
   db: Database,
   taskIds: number[]
-): Record<number, { active: number; total: number }> {
+): Record<number, { completed: number; total: number }> {
   if (taskIds.length === 0) return {};
   const placeholders = taskIds.map(() => '?').join(', ');
   const rows = db
     .prepare(
       `SELECT task_id,
               COUNT(*) AS total,
-              SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) AS active
+              SUM(CASE WHEN status = 'complete' THEN 1 ELSE 0 END) AS completed
        FROM subtasks
        WHERE task_id IN (${placeholders})
        GROUP BY task_id`
     )
-    .all(...taskIds) as { task_id: number; total: number; active: number }[];
-  const result: Record<number, { active: number; total: number }> = {};
+    .all(...taskIds) as { task_id: number; total: number; completed: number }[];
+  const result: Record<number, { completed: number; total: number }> = {};
   for (const row of rows) {
-    result[row.task_id] = { active: row.active, total: row.total };
+    result[row.task_id] = { completed: row.completed, total: row.total };
   }
   return result;
 }
