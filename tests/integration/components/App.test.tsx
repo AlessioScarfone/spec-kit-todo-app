@@ -11,6 +11,7 @@ const UP = '\u001b[A';
 const DOWN = '\u001b[B';
 const RIGHT = '\u001b[C';
 const LEFT = '\u001b[D';
+const TAB = '\t';
 
 function createTestDb() {
   const db = new Database(':memory:');
@@ -556,5 +557,116 @@ describe('002: subtask count badge', () => {
     // The task should be visible (completed) but no badge
     const titleLine = frame.split('\n').find((l: string) => l.includes('All done task')) ?? '';
     expect(titleLine).not.toMatch(/All done task.*\d/);
+  });
+});
+
+// ────────────────────────────────────────────────────────────
+// 003: Tab key subtask toggle
+// ────────────────────────────────────────────────────────────
+describe('003: Tab key subtask toggle', () => {
+  // Helper: create a task with one subtask and return {lastFrame, stdin}
+  async function setupTaskWithSubtask(taskTitle: string, subtaskTitle: string) {
+    const db = createTestDb();
+    const { lastFrame, stdin } = render(<App db={db} />);
+    stdin.write('a');
+    await sleep(50);
+    stdin.write(taskTitle);
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    stdin.write('s');
+    await sleep(50);
+    stdin.write(subtaskTitle);
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    // Subtasks start collapsed; parent task is selected
+    return { lastFrame, stdin };
+  }
+
+  it('(1) Tab expands collapsed subtasks on a task row', async () => {
+    const { lastFrame, stdin } = await setupTaskWithSubtask('Tab Parent', 'Tab Sub');
+    // Subtasks collapsed — Tab Sub should not be visible
+    expect(lastFrame()).not.toContain('Tab Sub');
+    // Press Tab — should expand
+    stdin.write(TAB);
+    await sleep(50);
+    expect(lastFrame()).toContain('Tab Sub');
+  });
+
+  it('(2) Tab collapses expanded subtasks on a task row', async () => {
+    const { lastFrame, stdin } = await setupTaskWithSubtask('Collapse Parent', 'Collapse Sub');
+    // Expand via RIGHT first
+    stdin.write(RIGHT);
+    await sleep(50);
+    expect(lastFrame()).toContain('Collapse Sub');
+    // Press Tab — should collapse
+    stdin.write(TAB);
+    await sleep(50);
+    expect(lastFrame()).not.toContain('Collapse Sub');
+  });
+
+  it('(3) repeated Tab alternates expanded and collapsed state', async () => {
+    const { lastFrame, stdin } = await setupTaskWithSubtask('Toggle Parent', 'Toggle Sub');
+    // Initially collapsed
+    expect(lastFrame()).not.toContain('Toggle Sub');
+    // Tab → expand
+    stdin.write(TAB);
+    await sleep(50);
+    expect(lastFrame()).toContain('Toggle Sub');
+    // Tab → collapse
+    stdin.write(TAB);
+    await sleep(50);
+    expect(lastFrame()).not.toContain('Toggle Sub');
+    // Tab → expand again
+    stdin.write(TAB);
+    await sleep(50);
+    expect(lastFrame()).toContain('Toggle Sub');
+  });
+
+  it('(4) Tab is a no-op when selected task has no subtasks', async () => {
+    const db = createTestDb();
+    const { lastFrame, stdin } = render(<App db={db} />);
+    stdin.write('a');
+    await sleep(50);
+    stdin.write('No Sub Task');
+    await sleep(50);
+    stdin.write(ENTER);
+    await sleep(50);
+    const frameBefore = lastFrame() ?? '';
+    stdin.write(TAB);
+    await sleep(50);
+    const frameAfter = lastFrame() ?? '';
+    // Frame should remain stable; no crash
+    expect(frameAfter).toContain('No Sub Task');
+    // Confirm the visible rows didn't change (still no subtasks visible)
+    expect(frameAfter).toEqual(frameBefore);
+  });
+
+  it('(5) Tab is a no-op when a subtask row is selected', async () => {
+    const { lastFrame, stdin } = await setupTaskWithSubtask('Row Tab Parent', 'Row Tab Sub');
+    // Expand subtasks
+    stdin.write(RIGHT);
+    await sleep(50);
+    expect(lastFrame()).toContain('Row Tab Sub');
+    // Navigate down to the subtask row
+    stdin.write(DOWN);
+    await sleep(50);
+    // Press Tab — should be no-op; subtask stays visible
+    stdin.write(TAB);
+    await sleep(50);
+    expect(lastFrame()).toContain('Row Tab Sub');
+  });
+
+  it('right and left arrow keys still work after Tab is added', async () => {
+    const { lastFrame, stdin } = await setupTaskWithSubtask('Arrow Parent', 'Arrow Sub');
+    // RIGHT expands
+    stdin.write(RIGHT);
+    await sleep(50);
+    expect(lastFrame()).toContain('Arrow Sub');
+    // LEFT collapses
+    stdin.write(LEFT);
+    await sleep(50);
+    expect(lastFrame()).not.toContain('Arrow Sub');
   });
 });
