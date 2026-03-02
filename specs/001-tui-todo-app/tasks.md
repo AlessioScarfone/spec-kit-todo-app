@@ -19,11 +19,11 @@
 
 **Purpose**: Project initialization, tooling, and directory structure.
 
-- [ ] T001 Initialize `package.json` with `"type": "module"`, `bin`, and all scripts (`dev`, `build`, `test`, `test:watch`)
-- [ ] T002 Install runtime dependencies: `ink`, `react`, `@inkjs/ui`, `better-sqlite3`, `env-paths`
-- [ ] T003 Install dev dependencies: `typescript`, `@types/node`, `@types/react`, `@types/better-sqlite3`, `tsx`, `vitest`, `ink-testing-library`
-- [ ] T004 [P] Configure `tsconfig.json` with `target: ES2022`, `module: NodeNext`, `moduleResolution: NodeNext`, `jsx: react-jsx`, `outDir: dist`, `rootDir: src`
-- [ ] T005 [P] Create directory skeleton: `src/components/`, `src/db/`, `src/hooks/`, `tests/unit/db/`, `tests/unit/hooks/`, `tests/integration/components/`
+- [X] T001 Initialize `package.json` with `"type": "module"`, `bin`, and all scripts (`dev`, `build`, `test`, `test:watch`)
+- [X] T002 Install runtime dependencies: `ink`, `react`, `@inkjs/ui`, `better-sqlite3`, `env-paths`
+- [X] T003 Install dev dependencies: `typescript`, `@types/node`, `@types/react`, `@types/better-sqlite3`, `tsx`, `vitest`, `ink-testing-library`
+- [X] T004 [P] Configure `tsconfig.json` with `target: ES2022`, `module: NodeNext`, `moduleResolution: NodeNext`, `jsx: react-jsx`, `outDir: dist`, `rootDir: src`
+- [X] T005 [P] Create directory skeleton: `src/components/`, `src/db/`, `src/hooks/`, `tests/unit/db/`, `tests/unit/hooks/`, `tests/integration/components/`
 
 **Checkpoint**: Project is bootable — `npm install` runs clean, TypeScript compiler resolves.
 
@@ -35,10 +35,10 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T006 Define shared TypeScript types (`Task`, `Subtask`, `UIState`, `InputMode`) in `src/types.ts`
-- [ ] T007 Implement `openDatabase()` in `src/db/connection.ts`: open SQLite file at `env-paths('todo-tui').data/tasks.db`, apply `PRAGMA journal_mode = WAL` and `PRAGMA foreign_keys = ON`, call `runMigrations()`
-- [ ] T008 Implement `runMigrations()` in `src/db/migrations.ts`: DDL for `tasks` and `subtasks` tables, indexes, `CHECK` constraints, and `user_version` guard — exactly per `contracts/data-schema.md`
-- [ ] T036 Implement DB startup error handling in `src/db/connection.ts`: catch SQLite `NOTADB` / file-open errors; on corruption display error via `StatusMessage` in `src/components/App.tsx` and start with a fresh empty DB; on missing file create DB normally (FR-015, Constitution IV)
+- [X] T006 Define shared TypeScript types (`Task`, `Subtask`, `UIState`, `InputMode`) in `src/types.ts`
+- [X] T007 Implement `openDatabase()` in `src/db/connection.ts`: open SQLite file at `env-paths('todo-tui').data/tasks.db`, apply `PRAGMA journal_mode = WAL` and `PRAGMA foreign_keys = ON`, call `runMigrations()`
+- [X] T008 Implement `runMigrations()` in `src/db/migrations.ts`: DDL for `tasks` and `subtasks` tables, indexes, `CHECK` constraints, and `user_version` guard — exactly per `contracts/data-schema.md`
+- [X] T036 Implement DB startup error handling in `src/db/connection.ts`: catch SQLite `NOTADB` / file-open errors; on corruption display error via `StatusMessage` in `src/components/App.tsx` and start with a fresh empty DB; on missing file create DB normally (FR-015, Constitution IV)
 
 **Checkpoint**: Foundation ready — `openDatabase()` returns a usable `Database` instance; schema is applied; DB startup errors surface correctly to the user; all user story phases can now begin.
 
@@ -52,20 +52,20 @@
 
 ### Tests for User Story 1 ⚠️ WRITE FIRST — MUST FAIL BEFORE IMPLEMENTATION
 
-- [ ] T009 [P] [US1] Write unit tests for `getAllTasks()` and `insertTask()` against `:memory:` SQLite in `tests/unit/db/queries.test.ts`; include a performance benchmark seeding 500 rows and asserting `getAllTasks()` completes within 200 ms (SC-002)
-- [ ] T010 [P] [US1] Write `useTasks` hook unit tests: initial load, `addTask` state update, empty list state, in `tests/unit/hooks/useTasks.test.ts`
-- [ ] T011 [US1] Write integration test: render `<App>`, press `a`, type title, press Enter, verify task appears in frame output in `tests/integration/components/App.test.tsx`
+- [X] T009 [P] [US1] Write unit tests for `getAllTasks()` and `insertTask()` against `:memory:` SQLite in `tests/unit/db/queries.test.ts`; include a performance benchmark seeding 500 rows and asserting `getAllTasks()` completes within 200 ms (SC-002)
+- [X] T010 [P] [US1] Write `useTasks` hook unit tests: initial load, `addTask` state update, empty list state, in `tests/unit/hooks/useTasks.test.ts`
+- [X] T011 [US1] Write integration test: render `<App>`, press `a`, type title, press Enter, verify task appears in frame output in `tests/integration/components/App.test.tsx`
 
 ### Implementation for User Story 1
 
-- [ ] T012 [US1] Implement `getAllTasks()` and `insertTask()` query functions (active-only and all-items variants) in `src/db/queries.ts`
-- [ ] T013 [P] [US1] Create `EmptyState` component (friendly no-tasks message, FR-016) in `src/components/EmptyState.tsx`
-- [ ] T014 [P] [US1] Create `TaskInput` component using `ink-ui` `TextInput`; blocks confirm on empty title (FR-003) in `src/components/TaskInput.tsx`
-- [ ] T015 [P] [US1] Create `TaskItem` component: renders task row with title; accordion indicator placeholder in `src/components/TaskItem.tsx`
-- [ ] T016 [US1] Implement `useTasks` hook: load active tasks on mount, expose `addTask` callback, manage `selectedIndex` and `inputMode` UI state in `src/hooks/useTasks.ts`
-- [ ] T017 [US1] Create `TaskList` component: renders `TaskItem` rows or `EmptyState`; highlights selected row in `src/components/TaskList.tsx`
-- [ ] T018 [US1] Create root `App` component: composes `TaskList` + `TaskInput`; handles `↑`/`↓` navigation and `a` key to enter add-task mode in `src/components/App.tsx`
-- [ ] T019 [US1] Create entry point: open DB via `openDatabase()`, call `render(<App db={db} />)` in `src/index.tsx`
+- [X] T012 [US1] Implement `getAllTasks()` and `insertTask()` query functions (active-only and all-items variants) in `src/db/queries.ts`
+- [X] T013 [P] [US1] Create `EmptyState` component (friendly no-tasks message, FR-016) in `src/components/EmptyState.tsx`
+- [X] T014 [P] [US1] Create `TaskInput` component using `ink-ui` `TextInput`; blocks confirm on empty title (FR-003) in `src/components/TaskInput.tsx`
+- [X] T015 [P] [US1] Create `TaskItem` component: renders task row with title; accordion indicator placeholder in `src/components/TaskItem.tsx`
+- [X] T016 [US1] Implement `useTasks` hook: load active tasks on mount, expose `addTask` callback, manage `selectedIndex` and `inputMode` UI state in `src/hooks/useTasks.ts`
+- [X] T017 [US1] Create `TaskList` component: renders `TaskItem` rows or `EmptyState`; highlights selected row in `src/components/TaskList.tsx`
+- [X] T018 [US1] Create root `App` component: composes `TaskList` + `TaskInput`; handles `↑`/`↓` navigation and `a` key to enter add-task mode in `src/components/App.tsx`
+- [X] T019 [US1] Create entry point: open DB via `openDatabase()`, call `render(<App db={db} />)` in `src/index.tsx`
 
 **Checkpoint**: `npm run dev` launches with working task list; tasks typed in survive a restart; empty list shows a message; US1 is fully functional.
 
@@ -79,17 +79,17 @@
 
 ### Tests for User Story 2 ⚠️ WRITE FIRST — MUST FAIL BEFORE IMPLEMENTATION
 
-- [ ] T020 [P] [US2] Extend `tests/unit/db/queries.test.ts`: add tests for `completeTask()`, `completeSubtask()`, `deleteTask()`, and `getAllTasks()` with `showCompleted = true`
-- [ ] T021 [P] [US2] Extend `tests/unit/hooks/useTasks.test.ts`: add tests for `completeTask`, `deleteTask`, `toggleShowCompleted` actions and resulting state changes
-- [ ] T022 [US2] Extend integration tests in `tests/integration/components/App.test.tsx` with US2 keyboard scenarios: `c` to complete a task, `c` to complete a subtask when a subtask row is selected, `d` to delete, `h` to toggle visibility
+- [X] T020 [P] [US2] Extend `tests/unit/db/queries.test.ts`: add tests for `completeTask()`, `completeSubtask()`, `deleteTask()`, and `getAllTasks()` with `showCompleted = true`
+- [X] T021 [P] [US2] Extend `tests/unit/hooks/useTasks.test.ts`: add tests for `completeTask`, `deleteTask`, `toggleShowCompleted` actions and resulting state changes
+- [X] T022 [US2] Extend integration tests in `tests/integration/components/App.test.tsx` with US2 keyboard scenarios: `c` to complete a task, `c` to complete a subtask when a subtask row is selected, `d` to delete, `h` to toggle visibility
 
 ### Implementation for User Story 2
 
-- [ ] T023 [US2] Add `completeTask()` (transactionally completes task + all subtasks), `deleteTask()`, and `showCompleted`-aware `getAllTasks()` overload to `src/db/queries.ts`
-- [ ] T041 [US2] Add `completeSubtask()` query function (`UPDATE subtasks SET status = 'complete' WHERE id = ?`) to `src/db/queries.ts`; expose `completeSubtask` action in `src/hooks/useTasks.ts`; wire `c` key for subtask-selected row in `src/components/App.tsx` (keyboard-schema.md condition: `c` applies to "Task or Subtask")
-- [ ] T024 [US2] Extend `useTasks` hook: add `completeTask`, `deleteTask`, `showCompleted` toggle, re-query after each mutation in `src/hooks/useTasks.ts`
-- [ ] T025 [US2] Update `TaskItem` to render completed state (dim color / strikethrough via Ink) in `src/components/TaskItem.tsx`
-- [ ] T026 [US2] Update `App` component: wire `c`, `d`, `h` key bindings; pass `showCompleted` flag down to `TaskList`/`TaskItem` in `src/components/App.tsx`
+- [X] T023 [US2] Add `completeTask()` (transactionally completes task + all subtasks), `deleteTask()`, and `showCompleted`-aware `getAllTasks()` overload to `src/db/queries.ts`
+- [X] T041 [US2] Add `completeSubtask()` query function (`UPDATE subtasks SET status = 'complete' WHERE id = ?`) to `src/db/queries.ts`; expose `completeSubtask` action in `src/hooks/useTasks.ts`; wire `c` key for subtask-selected row in `src/components/App.tsx` (keyboard-schema.md condition: `c` applies to "Task or Subtask")
+- [X] T024 [US2] Extend `useTasks` hook: add `completeTask`, `deleteTask`, `showCompleted` toggle, re-query after each mutation in `src/hooks/useTasks.ts`
+- [X] T025 [US2] Update `TaskItem` to render completed state (dim color / strikethrough via Ink) in `src/components/TaskItem.tsx`
+- [X] T026 [US2] Update `App` component: wire `c`, `d`, `h` key bindings; pass `showCompleted` flag down to `TaskList`/`TaskItem` in `src/components/App.tsx`
 
 **Checkpoint**: US1 and US2 both work and all associated unit + integration tests pass; completed tasks hide/show correctly; state survives restart.
 
@@ -103,18 +103,18 @@
 
 ### Tests for User Story 3 ⚠️ WRITE FIRST — MUST FAIL BEFORE IMPLEMENTATION
 
-- [ ] T027 [P] [US3] Extend `tests/unit/db/queries.test.ts`: add tests for `insertSubtask()`, `deleteSubtask()`, `getSubtasksForTask()`, and cascade delete behavior
-- [ ] T028 [P] [US3] Extend `tests/unit/hooks/useTasks.test.ts`: add tests for `addSubtask`, `deleteSubtask`, `toggleExpand` and `expandedTaskIds` state management
-- [ ] T029 [US3] Extend integration tests in `tests/integration/components/App.test.tsx`: add subtask add, collapse, expand, and delete keyboard scenarios
+- [X] T027 [P] [US3] Extend `tests/unit/db/queries.test.ts`: add tests for `insertSubtask()`, `deleteSubtask()`, `getSubtasksForTask()`, and cascade delete behavior
+- [X] T028 [P] [US3] Extend `tests/unit/hooks/useTasks.test.ts`: add tests for `addSubtask`, `deleteSubtask`, `toggleExpand` and `expandedTaskIds` state management
+- [X] T029 [US3] Extend integration tests in `tests/integration/components/App.test.tsx`: add subtask add, collapse, expand, and delete keyboard scenarios
 
 ### Implementation for User Story 3
 
-- [ ] T030 [US3] Add `insertSubtask()`, `deleteSubtask()`, and `getSubtasksForTask()` query functions to `src/db/queries.ts`
-- [ ] T031 [P] [US3] Create `SubtaskItem` component: indented row rendering with title and completed state in `src/components/SubtaskItem.tsx`
-- [ ] T032 [US3] Extend `useTasks` hook: add `addSubtask`, `deleteSubtask` actions; add `expandedTaskIds` Set to UI state; add `toggleExpand` callback in `src/hooks/useTasks.ts`
-- [ ] T033 [US3] Update `TaskItem` to show accordion indicator (`▶` collapsed / `▼` expanded) based on `expandedTaskIds` in `src/components/TaskItem.tsx`
-- [ ] T034 [US3] Update `TaskList` to interleave `SubtaskItem` rows under their parent when expanded in `src/components/TaskList.tsx`
-- [ ] T035 [US3] Update `App` component: wire `s` (add-subtask mode), `←` (collapse), `→` (expand) key bindings; handle `d` on subtask rows in `src/components/App.tsx`
+- [X] T030 [US3] Add `insertSubtask()`, `deleteSubtask()`, and `getSubtasksForTask()` query functions to `src/db/queries.ts`
+- [X] T031 [P] [US3] Create `SubtaskItem` component: indented row rendering with title and completed state in `src/components/SubtaskItem.tsx`
+- [X] T032 [US3] Extend `useTasks` hook: add `addSubtask`, `deleteSubtask` actions; add `expandedTaskIds` Set to UI state; add `toggleExpand` callback in `src/hooks/useTasks.ts`
+- [X] T033 [US3] Update `TaskItem` to show accordion indicator (`▶` collapsed / `▼` expanded) based on `expandedTaskIds` in `src/components/TaskItem.tsx`
+- [X] T034 [US3] Update `TaskList` to interleave `SubtaskItem` rows under their parent when expanded in `src/components/TaskList.tsx`
+- [X] T035 [US3] Update `App` component: wire `s` (add-subtask mode), `←` (collapse), `→` (expand) key bindings; handle `d` on subtask rows in `src/components/App.tsx`
 
 **Checkpoint**: All three user stories independently functional; subtask hierarchy renders and persists correctly; all tests pass.
 
@@ -125,10 +125,10 @@
 **Purpose**: Resilience, validation edges, and distribution wiring that cut across all user stories.
 
 - ~~T036~~ *(moved to Phase 2 — Foundational; DB error handling must be in place before any user story is tested — analysis finding C6)*
-- [ ] T037 [P] Enforce empty-title blocking in `TaskInput` component: `Enter` on empty string is a no-op; user stays in input mode (FR-003) in `src/components/TaskInput.tsx`
-- [ ] T038 [P] Add `q` quit key binding (graceful exit from idle mode) in `src/components/App.tsx`
-- [ ] T039 [P] Verify `bin` field in `package.json` and shebang in `src/index.tsx`; confirm `npm run build` produces `dist/index.js` and `todo-tui` runs globally
-- [ ] T040 Validate full quickstart.md workflow: bootstrap, `npm run dev`, add tasks/subtasks, quit, relaunch state restored, `npm test` all green
+- [X] T037 [P] Enforce empty-title blocking in `TaskInput` component: `Enter` on empty string is a no-op; user stays in input mode (FR-003) in `src/components/TaskInput.tsx`
+- [X] T038 [P] Add `q` quit key binding (graceful exit from idle mode) in `src/components/App.tsx`
+- [X] T039 [P] Verify `bin` field in `package.json` and shebang in `src/index.tsx`; confirm `npm run build` produces `dist/index.js` and `todo-tui` runs globally
+- [X] T040 Validate full quickstart.md workflow: bootstrap, `npm run dev`, add tasks/subtasks, quit, relaunch state restored, `npm test` all green
 
 ---
 
